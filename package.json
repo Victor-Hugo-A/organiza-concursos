@@ -1,8 +1,8 @@
 {
-  "name": "organiza-concursos",
+  "name": "organiza",
   "version": "1.0.0",
   "private": true,
-  "description": "Plataforma pública para consulta, acompanhamento e preparação para concursos públicos.",
+  "description": "Plataforma pessoal para organizar materiais e planos de estudo.",
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",

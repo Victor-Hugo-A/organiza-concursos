@@ -7,293 +7,136 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum ConcursoTipo {
-  FEDERAL
-  ESTADUAL
-  MUNICIPAL
-  DISTRITAL
-}
-
-enum ConcursoStatus {
-  SOLICITADO
-  EM_ESTUDO
-  AUTORIZADO
-  COMISSAO_FORMADA
-  BANCA_DEFINIDA
-  PREVISTO
-  EDITAL_PUBLICADO
-  INSCRICOES_ABERTAS
-  INSCRICOES_ENCERRADAS
-  EM_ANDAMENTO
-  PROVA_PROXIMA
-  PROVA_REALIZADA
-  RESULTADO_PUBLICADO
-  FINALIZADO
-  SUSPENSO
-  CANCELADO
-}
-
-enum ConcursoModalidade {
+enum PlanoTipo {
+  ENEM
+  PAS
   CONCURSO_PUBLICO
-  PROCESSO_SELETIVO_TEMPORARIO
+  VESTIBULAR
+  OUTRO
 }
 
-enum Confiabilidade {
-  FONTE_OFICIAL_VERIFICADA
-  INFORMACAO_EM_ANALISE
-  CONCURSO_PREVISTO
-  DADO_DE_DEMONSTRACAO
-  AGUARDANDO_CONFIRMACAO
+enum MaterialTipo {
+  PDF
+  SLIDE
+  DOCUMENTO
 }
 
-enum FonteTipo {
-  ORGAO_OFICIAL
-  BANCA_OFICIAL
-  DIARIO_OFICIAL
-  EDITAL
-  COMUNICADO_OFICIAL
-  DADO_DEMONSTRACAO
-  AGUARDANDO_VALIDACAO
+enum RevisaoStatus {
+  PENDENTE
+  CONCLUIDA
 }
 
-enum Importancia {
-  BAIXA
-  MEDIA
-  ALTA
-}
-
-enum Dificuldade {
-  BAIXA
-  MEDIA
-  ALTA
-}
-
-enum EventoTipo {
-  INICIO_INSCRICOES
-  FIM_INSCRICOES
-  PAGAMENTO
-  LOCAIS_PROVA
-  PROVA
-  GABARITO
-  RESULTADO_PRELIMINAR
-  RESULTADO_FINAL
-}
-
-model Concurso {
-  id                  String           @id @default(cuid())
-  slug                String           @unique
-  titulo              String
-  ano                 Int
-  tipo                ConcursoTipo
-  modalidade          ConcursoModalidade @default(CONCURSO_PUBLICO)
-  abrangencia         String
-  status              ConcursoStatus
-  etapaPrevisao       String?
-  confiabilidade      Confiabilidade     @default(AGUARDANDO_CONFIRMACAO)
-  fonteVerificada     Boolean            @default(false)
-  origemDados         String             @default("importacao_manual")
-  ultimaVerificacaoEm DateTime?
-  regiao              String?
-  estado              String?
-  municipio           String?
-  areaAtuacao         String
-  vagas               Int?
-  cadastroReserva     Boolean          @default(false)
-  salarioMinimo       Decimal?
-  salarioMaximo       Decimal?
-  jornada             String?
-  inicioInscricoes    DateTime?
-  fimInscricoes       DateTime?
-  dataLimitePagamento DateTime?
-  dataProva           DateTime?
-  taxaInscricao       Decimal?
-  resumo              String?
-  requisitos          String[]         @default([])
-  etapas              String[]         @default([])
-  destaque            Boolean          @default(false)
-  atualizadoEm        DateTime         @updatedAt
-  criadoEm            DateTime         @default(now())
-
-  orgaoId             String
-  bancaId             String?
-  orgao               Orgao            @relation(fields: [orgaoId], references: [id], onDelete: Restrict)
-  banca               Banca?           @relation(fields: [bancaId], references: [id], onDelete: SetNull)
-  cargos              Cargo[]
-  editais             Edital[]
-  linksOficiais       LinkOficial[]
-  fontes              FonteConcurso[]
-  materias            Materia[]
-  atualizacoes        Atualizacao[]
-  datasImportantes    DataImportante[]
-  provasAnteriores    ProvaAnterior[]
-
-  @@index([status])
-  @@index([ano])
-  @@index([confiabilidade])
-  @@index([regiao, estado, municipio])
-  @@index([tipo])
-  @@index([orgaoId])
-  @@index([bancaId])
-}
-
-model FonteConcurso {
-  id            String      @id @default(cuid())
-  concursoId    String
-  nome          String
-  url           String?
-  tipo          FonteTipo
-  consultadoEm  DateTime
-  observacao    String?
-  concurso      Concurso    @relation(fields: [concursoId], references: [id], onDelete: Cascade)
-
-  @@index([concursoId])
-  @@index([tipo])
-}
-
-model Orgao {
-  id             String      @id @default(cuid())
-  slug           String      @unique
-  nome           String
-  descricao      String?
-  areaAtuacao    String
-  linksOficiais  String[]    @default([])
-  concursos      Concurso[]
-  criadoEm       DateTime    @default(now())
-  atualizadoEm   DateTime    @updatedAt
-}
-
-model Banca {
-  id                String      @id @default(cuid())
-  slug              String      @unique
-  nome              String
-  descricao         String?
-  estiloQuestoes    String?
-  nivelDificuldade  String?
-  caracteristicas   String[]    @default([])
-  dicasPreparacao   String[]    @default([])
-  concursos         Concurso[]
-  provasAnteriores  ProvaAnterior[]
-  criadoEm          DateTime    @default(now())
-  atualizadoEm      DateTime    @updatedAt
-}
-
-model Cargo {
-  id             String    @id @default(cuid())
-  concursoId     String
-  nome           String
-  escolaridade   String
-  vagas          Int?
-  salarioMinimo  Decimal?
-  salarioMaximo  Decimal?
-  jornada        String?
-  requisitos     String[]  @default([])
-  concurso       Concurso  @relation(fields: [concursoId], references: [id], onDelete: Cascade)
-
-  @@index([concursoId])
-  @@index([escolaridade])
-}
-
-model Localidade {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  nome        String
-  tipo        String
-  regiao      String?
-  estado      String?
-  municipio   String?
-  criadoEm    DateTime @default(now())
-}
-
-model Edital {
-  id           String    @id @default(cuid())
-  concursoId   String
-  titulo       String
-  url          String?
-  publicadoEm  DateTime?
-  resumo       String?
-  concurso     Concurso  @relation(fields: [concursoId], references: [id], onDelete: Cascade)
-
-  @@index([concursoId])
-}
-
-model LinkOficial {
-  id          String    @id @default(cuid())
-  concursoId  String
-  titulo      String
-  tipo        String
-  url         String
-  concurso    Concurso  @relation(fields: [concursoId], references: [id], onDelete: Cascade)
-
-  @@index([concursoId])
-}
-
-model Materia {
-  id                 String       @id @default(cuid())
-  concursoId         String
-  slug               String
+model Usuario {
+  id                 String              @id @default(cuid())
   nome               String
-  categoria          String
-  importancia        Importancia
-  dificuldade        Dificuldade
-  questoesEstimadas  Int?
-  ordemRecomendada   Int
-  estrategia         String?
-  observacaoAnalitica String?
-  concurso           Concurso     @relation(fields: [concursoId], references: [id], onDelete: Cascade)
-  assuntos           Assunto[]
-
-  @@unique([concursoId, slug])
-  @@index([categoria])
+  email              String              @unique
+  senhaHash          String
+  emailVerificadoEm  DateTime?
+  criadoEm           DateTime            @default(now())
+  atualizadoEm       DateTime            @updatedAt
+  planos             PlanoEstudo[]
+  materiais          MaterialEstudo[]
+  tokensVerificacao  TokenVerificacao[]
+  sessoes            Sessao[]
 }
 
-model Assunto {
-  id          String    @id @default(cuid())
-  materiaId   String
-  titulo      String
-  subtitulos  String[]  @default([])
-  recorrente  Boolean   @default(false)
-  materia     Materia   @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+model Sessao {
+  id          String   @id @default(cuid())
+  usuarioId   String
+  tokenHash   String   @unique
+  expiraEm    DateTime
+  criadoEm    DateTime @default(now())
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
+  @@index([usuarioId])
+  @@index([expiraEm])
+}
+
+model TokenVerificacao {
+  id          String   @id @default(cuid())
+  usuarioId   String
+  tokenHash   String   @unique
+  expiraEm    DateTime
+  criadoEm    DateTime @default(now())
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([expiraEm])
+}
+
+model PlanoEstudo {
+  id          String          @id @default(cuid())
+  usuarioId   String
+  titulo      String
+  tipo        PlanoTipo       @default(OUTRO)
+  descricao   String?
+  cor         String          @default("#166534")
+  arquivado   Boolean         @default(false)
+  criadoEm    DateTime        @default(now())
+  atualizadoEm DateTime       @updatedAt
+  usuario     Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  materias    MateriaEstudo[]
+  materiais   MaterialEstudo[]
+
+  @@index([usuarioId, arquivado])
+}
+
+model MateriaEstudo {
+  id          String       @id @default(cuid())
+  planoId     String
+  titulo      String
+  ordem       Int          @default(0)
+  plano       PlanoEstudo  @relation(fields: [planoId], references: [id], onDelete: Cascade)
+  materiais   MaterialEstudo[]
+
+  @@index([planoId, ordem])
+}
+
+model MaterialEstudo {
+  id                String            @id @default(cuid())
+  usuarioId         String
+  planoId           String?
+  materiaId         String?
+  titulo            String
+  nomeArquivo       String
+  urlArquivo        String
+  tipo              MaterialTipo      @default(PDF)
+  tamanhoBytes      Int?
+  paginas           Int?
+  criadoEm          DateTime          @default(now())
+  atualizadoEm      DateTime          @updatedAt
+  usuario           Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  plano             PlanoEstudo?      @relation(fields: [planoId], references: [id], onDelete: SetNull)
+  materia           MateriaEstudo?    @relation(fields: [materiaId], references: [id], onDelete: SetNull)
+  palavrasChave     PalavraChave[]
+  revisoes          Revisao[]
+
+  @@index([usuarioId, criadoEm])
+  @@index([planoId])
   @@index([materiaId])
 }
 
-model Atualizacao {
-  id            String    @id @default(cuid())
-  concursoId    String
-  tipo          String
-  data          DateTime
-  resumo        String
-  fonteOficial  String
-  url           String?
-  confiabilidade Confiabilidade @default(AGUARDANDO_CONFIRMACAO)
-  concurso      Concurso  @relation(fields: [concursoId], references: [id], onDelete: Cascade)
+model PalavraChave {
+  id          String           @id @default(cuid())
+  materialId  String
+  termo       String
+  criadoEm    DateTime         @default(now())
+  material    MaterialEstudo   @relation(fields: [materialId], references: [id], onDelete: Cascade)
 
-  @@index([data])
-  @@index([concursoId])
+  @@unique([materialId, termo])
+  @@index([termo])
 }
 
-model DataImportante {
-  id          String      @id @default(cuid())
-  concursoId  String
+model Revisao {
+  id          String         @id @default(cuid())
+  materialId  String
   titulo      String
-  tipo        EventoTipo
-  data        DateTime
-  concurso    Concurso    @relation(fields: [concursoId], references: [id], onDelete: Cascade)
+  agendadaPara DateTime
+  concluidaEm DateTime?
+  status      RevisaoStatus  @default(PENDENTE)
+  criadoEm    DateTime       @default(now())
+  material    MaterialEstudo @relation(fields: [materialId], references: [id], onDelete: Cascade)
 
-  @@index([data])
-  @@index([concursoId])
-}
-
-model ProvaAnterior {
-  id          String    @id @default(cuid())
-  concursoId  String?
-  bancaId     String?
-  titulo      String
-  ano         Int?
-  url         String?
-  concurso    Concurso? @relation(fields: [concursoId], references: [id], onDelete: SetNull)
-  banca       Banca?    @relation(fields: [bancaId], references: [id], onDelete: SetNull)
-
-  @@index([concursoId])
-  @@index([bancaId])
+  @@index([agendadaPara, status])
+  @@index([materialId])
 }
