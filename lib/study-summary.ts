@@ -3,11 +3,16 @@ export type PdfPageText = { page: number; text: string };
 // Portuguese function words, common instructions and publishing boilerplate do not
 // identify a subject. Keep the original spelling for terms displayed to students.
 const stopWords = new Set(`a ao aos aquela aquelas aquele aqueles aquilo as ate com como da das de dela delas dele deles depois dessa dessas desse desses desta destas deste destes do dos e ela elas ele eles em entre era eram essa essas esse esses esta estas este estes eu foi foram ha isso isto ja la lhe lhes mais mas me mesmo meu meus minha minhas muito na nas nao nem no nos nossa nossas nosso nossos num numa o os ou para pela pelas pelo pelos por porque qual quais quando que quem se sem ser sera seu seus sua suas sao so sobre tambem te tem temos ter teve tipo toda todas todo todos tu um uma umas uns voce voces pode podem podemos deve devem devera sendo sido seja sejam sao esta estao estas estavam estava sao sao sao sao sao texto textos exemplo exemplos questao questoes alternativa alternativas assinale correta correto incorreta incorreto resposta respostas gabarito exercicio exercicios atividade atividades aula aulas pagina paginas professor professora aluno alunos material materiais conteudo conteudos capitulo unidade introducao conclusao objetivo objetivos estudo estudos observe veja seguir abaixo acima acordo forma maneira atraves partir cada caso casos ainda assim apenas tanto quanto portanto porem pois entao alem durante antes apos dentro fora segundo primeira primeiro parte partes etc www http https direitos reservados autor autora editora curso cursos pdf slide slides todos copyright`.split(/\s+/));
+for (const word of ["sempre", "cebraspe", "fgv", "fcc", "vunesp", "cespe", "irbr"]) stopWords.add(word);
 const connectors = new Set(["de", "da", "do", "das", "dos"]);
 const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 const words = (value: string) => value.match(/[\p{L}][\p{L}\p{M}-]*/gu) ?? [];
 const significant = (value: string) => value.length >= 3 && !stopWords.has(normalize(value));
 const sentenceSegmenter = new Intl.Segmenter("pt-BR", { granularity: "sentence" });
+
+function isLikelyPersonName(tokens: string[]) {
+  return tokens.length >= 2 && tokens.length <= 3 && tokens.every((token) => /^[A-ZÁÉÍÓÚÂÊÔÃÕÇ][a-záéíóúâêôãõç]+$/u.test(token));
+}
 
 type Sentence = { text: string; page: number; index: number; terms: Set<string>; score: number };
 type Term = { label: string; count: number; pages: Set<number>; heading: boolean; size: number; score: number };
@@ -47,7 +52,10 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
   };
   for (const page of clean) {
     for (const block of page.text.split(/\n+/).filter(Boolean)) {
+      if (/\b(?:CEBRASPE|FGV|FCC|VUNESP|CESPE)\b|coment[aá]rio formulado pela banca/i.test(block)) continue;
       const heading = block.length < 100 && !/[.!?]$/.test(block);
+      const blockTokens = words(block);
+      if (heading && isLikelyPersonName(blockTokens)) continue;
       // Punctuation forms a boundary: phrases never join unrelated clauses.
       for (const fragment of block.split(/[.,;:!?()[\]{}\n]/)) {
         const tokens = words(fragment);
@@ -65,7 +73,7 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
         const key = normalize(text);
         if (text.length < 35 || text.length > 1400 || tokens.length < 7 || terms.size < 3 || seenSentences.has(key)) continue;
         // Do not select questions or multiple-choice options as factual study notes.
-        if (/\?$|^[a-eA-E][).]\s|^(?:assinale|marque|qual|quais|julgue|segundo as ideias|da leitura|afirma-se|entende-se)\b/i.test(text)) continue;
+        if (/\?$|^[a-eA-E][).]\s|^(?:\(?[A-Z]+\/[^)]*\)\s*)?(?:assinale|marque|qual|quais|julgue|segundo as ideias|da leitura|afirma-se|entende-se)\b|\b(?:CEBRASPE|FGV|FCC|VUNESP|CESPE)\b|coment[aá]rio formulado pela banca/i.test(text)) continue;
         seenSentences.add(key);
         sentences.push({ text, page: page.page, index: sentences.length, terms, score: 0 });
       }

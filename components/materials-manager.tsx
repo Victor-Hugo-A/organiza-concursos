@@ -14,6 +14,7 @@ import {
   Plus,
   Search,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import { PlanCreator } from "@/components/plan-creator";
 import { BackLink } from "@/components/back-link";
@@ -47,6 +48,7 @@ async function requestJson(url: string, options: RequestInit) {
     );
   }
   const result = await response.json().catch(() => null);
+  if (response.status === 204) return { success: true, message: "" };
   if (!response.ok)
     throw new Error(
       result?.message ??
@@ -64,13 +66,11 @@ export function MaterialsManager({
   initialMaterials,
   selectedPlan,
   selectedSubject,
-  analysisAvailable,
 }: {
   plans: Plan[];
   initialMaterials: Material[];
   selectedPlan: string;
   selectedSubject: string;
-  analysisAvailable: boolean;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -83,6 +83,7 @@ export function MaterialsManager({
   const [creating, setCreating] = useState(false);
   const [analyzingId, setAnalyzingId] = useState("");
   const [movingId, setMovingId] = useState("");
+  const [deletingId, setDeletingId] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [subjectError, setSubjectError] = useState("");
@@ -147,15 +148,15 @@ export function MaterialsManager({
     }
   }, [router]);
 
-  // Resume PDFs uploaded before the service was configured, one at a time.
-  // Failed attempts require an explicit retry to avoid repeated paid requests.
+  // Analyze pending PDFs one at a time, including files uploaded before local analysis.
+  // Failed attempts require an explicit retry to avoid a processing loop.
   useEffect(() => {
-    if (!analysisAvailable || !selectedSubject || busy || analysisInFlight.current) return;
+    if (!selectedSubject || busy || analysisInFlight.current) return;
     const next = initialMaterials.find((material) =>
       material.materiaId === selectedSubject && material.analiseStatus === "PENDENTE" &&
       !material.resumo && !attemptedAnalyses.current.has(material.id));
     if (next) void analyze(next.id);
-  }, [analysisAvailable, selectedSubject, initialMaterials, busy, analyze]);
+  }, [selectedSubject, initialMaterials, busy, analyze]);
 
   async function upload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -176,11 +177,7 @@ export function MaterialsManager({
       setTitle("");
       formRef.current?.reset();
       router.refresh();
-      if (analysisAvailable) await analyze(result.data.id);
-      else
-        setMessage(
-          `PDF salvo em ${subject.titulo}. O resumo e as palavras-chave não foram gerados porque o serviço de IA não está configurado.`,
-        );
+      await analyze(result.data.id);
     } catch (err) {
       setMessage("");
       setError(
@@ -242,6 +239,22 @@ export function MaterialsManager({
       );
     } finally {
       setMovingId("");
+    }
+  }
+
+  async function removeMaterial(id: string, title: string) {
+    if (!window.confirm(`Excluir “${title}”? O PDF, o resumo e as palavras-chave serão removidos.`)) return;
+    setDeletingId(id);
+    setError("");
+    setMessage("");
+    try {
+      await requestJson(`/api/materials/${id}`, { method: "DELETE" });
+      setMessage("PDF excluído.");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível excluir o PDF.");
+    } finally {
+      setDeletingId("");
     }
   }
 
@@ -481,6 +494,14 @@ export function MaterialsManager({
                           : "Mover para matéria"}
                       </button>
                     </form>
+                    <button
+                      type="button"
+                      onClick={() => removeMaterial(material.id, material.titulo)}
+                      disabled={Boolean(deletingId)}
+                      className="btn-secondary mt-2 text-rose-700 hover:border-rose-300 hover:bg-rose-50"
+                    >
+                      {deletingId === material.id ? "Excluindo…" : <><Trash2 className="h-4 w-4" /> Excluir PDF</>}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -511,8 +532,8 @@ export function MaterialsManager({
                   sua próxima revisão.
                 </p>
                 <p className="mt-3 text-xs leading-5 text-stone-500">
-                  PDF de até 4 MB. Ao gerar o resumo, o conteúdo é enviado ao
-                  serviço de inteligência artificial da OpenAI.
+                  PDF de até 4 MB e 200 páginas, com texto selecionável. O resumo é
+                  preparado na própria plataforma, sem envio a serviços de IA.
                 </p>
               </div>
               <div className="grid content-start gap-4">
@@ -549,19 +570,10 @@ export function MaterialsManager({
                     ? "Preparando seu resumo…"
                     : pending
                       ? "Enviando PDF…"
-                      : analysisAvailable
-                        ? "Adicionar PDF e gerar resumo"
-                        : "Adicionar PDF à matéria"}
+                      : "Adicionar PDF e gerar resumo"}
                 </button>
               </div>
             </fieldset>
-            {!analysisAvailable && (
-              <p className="mt-5 rounded-xl bg-amber-50 p-3 text-sm leading-6 text-amber-900">
-                Resumo e palavras-chave indisponíveis: o serviço de IA da plataforma
-                ainda não está configurado. Seus PDFs ficam salvos. Após a configuração,
-                abra esta matéria para iniciar a análise automaticamente.
-              </p>
-            )}
           </form>
           <section className="mt-10">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -608,14 +620,24 @@ export function MaterialsManager({
                         </p>
                       </div>
                     </div>
-                    <a
-                      href={material.urlArquivo}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn-secondary text-sm"
-                    >
-                      Abrir PDF <ArrowRight className="h-4 w-4" />
-                    </a>
+                    <div className="flex flex-wrap gap-2">
+                      <a
+                        href={material.urlArquivo}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn-secondary text-sm"
+                      >
+                        Abrir PDF <ArrowRight className="h-4 w-4" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => removeMaterial(material.id, material.titulo)}
+                        disabled={Boolean(deletingId)}
+                        className="btn-secondary text-sm text-rose-700 hover:border-rose-300 hover:bg-rose-50"
+                      >
+                        {deletingId === material.id ? "Excluindo…" : <><Trash2 className="h-4 w-4" /> Excluir</>}
+                      </button>
+                    </div>
                   </div>
                   {material.resumo ? (
                     <div className="mt-6 border-t border-stone-100 pt-5">
@@ -642,19 +664,17 @@ export function MaterialsManager({
                   ) : (
                     <div className="mt-5 rounded-2xl bg-stone-50 p-4">
                       <p className="text-sm leading-6 text-stone-600">
-                        {!analysisAvailable
-                          ? "PDF salvo. A geração do resumo e das palavras-chave aguarda a configuração do serviço de IA."
-                          : analyzingId === material.id
+                        {analyzingId === material.id
                           ? "Lendo o PDF e identificando os principais conceitos…"
                           : (material.analiseErro ??
                             (material.analiseStatus === "PROCESSANDO"
                               ? "Análise em andamento. Se ela tiver sido interrompida, tente novamente em alguns instantes."
                               : "PDF salvo. Aguardando a análise automática do resumo e das palavras-chave."))}
                       </p>
-                      {analysisAvailable && <button
+                      <button
                         type="button"
                         onClick={() => analyze(material.id)}
-                        disabled={busy || !analysisAvailable}
+                        disabled={busy}
                         className="btn-secondary mt-3 text-sm"
                       >
                         {analyzingId === material.id && (
@@ -663,7 +683,7 @@ export function MaterialsManager({
                         {material.analiseStatus === "ERRO"
                           ? "Tentar gerar resumo novamente"
                           : "Gerar resumo e palavras-chave"}
-                      </button>}
+                      </button>
                     </div>
                   )}
                   {material.palavrasChave.length > 0 && (
@@ -688,9 +708,8 @@ export function MaterialsManager({
                   )}
                   {material.resumo && (
                     <p className="mt-5 text-xs leading-5 text-stone-500">
-                      Sugestões geradas por IA a partir deste PDF. Confira o
-                      documento original. A seleção não mede a frequência dos
-                      assuntos em provas anteriores.
+                      Resumo formado por trechos selecionados do PDF, com páginas para consulta.
+                      As palavras-chave indicam temas do documento, sem medir a frequência em provas.
                     </p>
                   )}
                 </article>

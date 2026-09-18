@@ -1,5 +1,6 @@
-import { readFile } from "node:fs/promises";
+import { readFile, unlink } from "node:fs/promises";
 import path from "node:path";
+import { del } from "@vercel/blob";
 import { PdfAnalysisError } from "@/lib/pdf-analysis";
 
 export const MAX_PDF_SIZE = 4 * 1024 * 1024;
@@ -61,4 +62,21 @@ export async function readMaterialPdf(url: string, usuarioId: string) {
       "O arquivo salvo não é um PDF válido de até 4 MB. Adicione uma nova cópia do documento.",
     );
   return bytes;
+}
+
+export async function deleteMaterialFile(url: string, usuarioId: string) {
+  if (url.startsWith(`/uploads/${usuarioId}/`)) {
+    const directory = path.resolve(process.cwd(), "public", "uploads", usuarioId);
+    const filename = url.slice(`/uploads/${usuarioId}/`.length);
+    if (filename !== path.basename(filename) || filename.includes("\\"))
+      throw new Error("Caminho de material inválido.");
+    await unlink(path.join(directory, filename)).catch((error: NodeJS.ErrnoException) => {
+      if (error.code !== "ENOENT") throw error;
+    });
+    return;
+  }
+  const remote = new URL(url);
+  if (remote.protocol !== "https:" || !remote.hostname.endsWith(".public.blob.vercel-storage.com") || !remote.pathname.startsWith(`/materiais/${usuarioId}/`))
+    throw new Error("Origem de material inválida.");
+  await del(remote.toString());
 }
