@@ -2,16 +2,16 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ArrowRight, Eye, EyeOff, Loader2, LockKeyhole, Mail, UserRound } from "lucide-react";
 
 type ApiResult = {
   success: boolean;
   message: string;
-  data?: { email?: string; verificationUrl?: string };
-  errors?: Array<{ code?: string; email?: string }>;
+  data?: { email?: string; emailEnviado?: boolean };
 };
 
-export function LoginForm({ verified = false }: { verified?: boolean }) {
+export function LoginForm({ verified = false, passwordReset = false }: { verified?: boolean; passwordReset?: boolean }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -31,10 +31,6 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
       });
       const result = await response.json() as ApiResult;
       if (!response.ok) {
-        if (result.errors?.some((item) => item.code === "EMAIL_NOT_VERIFIED")) {
-          router.push(`/verificar-email?email=${encodeURIComponent(email)}`);
-          return;
-        }
         setError(result.message);
         return;
       }
@@ -49,10 +45,11 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
 
   return <form className="mt-7 grid gap-4" onSubmit={submit}>
     {verified && <p className="rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">E-mail confirmado. Agora você já pode entrar.</p>}
+    {passwordReset && <p className="rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">Senha atualizada. Entre com sua nova senha.</p>}
     {error && <p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm font-semibold text-rose-700">{error}</p>}
     <label>E-mail<div className="relative mt-1.5"><Mail className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-stone-400" /><input name="email" required className="pl-10" type="email" placeholder="voce@email.com" autoComplete="email" /></div></label>
     <label>Senha<div className="relative mt-1.5"><LockKeyhole className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-stone-400" /><input name="senha" required className="pl-10 pr-10" type={showPassword ? "text" : "password"} placeholder="Sua senha" autoComplete="current-password" /><button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-2.5 grid h-6 w-6 place-items-center text-stone-400" aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div></label>
-    <div className="flex items-center justify-between gap-3"><label className="flex items-center gap-2 text-xs font-medium text-stone-600"><input name="lembrar" type="checkbox" className="h-4 w-4 rounded border-stone-300 p-0 text-emerald-800 focus:ring-emerald-200" /> Manter conectado</label><span className="text-xs text-stone-400">Recuperação de senha em breve</span></div>
+    <div className="flex items-center justify-between gap-3"><label className="flex items-center gap-2 text-xs font-medium text-stone-600"><input name="lembrar" type="checkbox" className="h-4 w-4 rounded border-stone-300 p-0 text-emerald-800 focus:ring-emerald-200" /> Manter conectado</label><Link href="/recuperar-senha" className="text-xs font-bold text-emerald-800 hover:text-emerald-950">Esqueci minha senha</Link></div>
     <button disabled={pending} className="btn-primary mt-2 w-full">{pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Entrar no meu espaço <ArrowRight className="h-4 w-4" /></>}</button>
   </form>;
 }
@@ -79,10 +76,6 @@ export function RegisterForm() {
         return;
       }
       const params = new URLSearchParams({ email: result.data?.email ?? String(form.get("email")) });
-      if (result.data?.verificationUrl) {
-        const token = new URL(result.data.verificationUrl).searchParams.get("token");
-        if (token) params.set("token", token);
-      }
       router.push(`/verificar-email?${params.toString()}`);
     } catch {
       setError("Não foi possível criar sua conta. Verifique a conexão com o banco.");
@@ -100,8 +93,7 @@ export function RegisterForm() {
   </form>;
 }
 
-export function VerificationPanel({ email, token, initialError }: { email: string; token?: string; initialError?: string }) {
-  const [localToken, setLocalToken] = useState(token);
+export function VerificationPanel({ email, initialError }: { email: string; initialError?: string }) {
   const [message, setMessage] = useState(initialError ? "O link é inválido ou expirou. Gere um novo abaixo." : "");
   const [pending, setPending] = useState(false);
 
@@ -117,18 +109,12 @@ export function VerificationPanel({ email, token, initialError }: { email: strin
       body: JSON.stringify({ email })
     });
     const result = await response.json() as ApiResult;
-    if (result.data?.verificationUrl) {
-      setLocalToken(new URL(result.data.verificationUrl).searchParams.get("token") ?? undefined);
-      setMessage("Novo link local gerado.");
-    } else {
-      setMessage(result.message);
-    }
+    setMessage(result.message);
     setPending(false);
   }
 
   return <div className="mt-8">
     {message && <p className="mb-4 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-800">{message}</p>}
-    {localToken && <a href={`/api/auth/verify?token=${encodeURIComponent(localToken)}`} className="btn-primary w-full">Confirmar e-mail no localhost <ArrowRight className="h-4 w-4" /></a>}
     <button onClick={resend} disabled={pending} className="btn-secondary mt-3 w-full">{pending && <Loader2 className="h-4 w-4 animate-spin" />} Reenviar confirmação</button>
   </div>;
 }

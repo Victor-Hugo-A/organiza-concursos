@@ -4,14 +4,18 @@ import { createOpaqueToken, hashToken } from "@/lib/auth";
 import { sendVerificationEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { normalizeEmail } from "@/lib/strings";
-import { handleApiError, ok } from "@/lib/api-response";
+import { fail, handleApiError, ok } from "@/lib/api-response";
 
 export async function POST(request: Request) {
   try {
+    if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
+      return fail("O envio de confirmação ainda não foi configurado.", 503);
+    }
     const { email: rawEmail } = z.object({ email: z.string().email() }).parse(await request.json());
     const email = normalizeEmail(rawEmail);
     const usuario = await prisma.usuario.findUnique({ where: { email } });
-    if (!usuario || usuario.emailVerificadoEm) return ok({ emailEnviado: true }, "Se a conta estiver pendente, enviaremos um novo link.");
+    if (!usuario) return fail("Não encontramos uma conta com este e-mail.", 404);
+    if (usuario.emailVerificadoEm) return ok({ emailEnviado: false }, "Este e-mail já está confirmado. Você já pode entrar.");
 
     await prisma.tokenVerificacao.deleteMany({ where: { usuarioId: usuario.id } });
     const token = createOpaqueToken();
@@ -21,9 +25,8 @@ export async function POST(request: Request) {
     const verificationUrl = `${env.APP_URL}/api/auth/verify?token=${encodeURIComponent(token)}`;
     const delivery = await sendVerificationEmail(usuario.nome, email, verificationUrl);
     return ok({
-      emailEnviado: delivery.sent,
-      verificationUrl: env.NODE_ENV === "development" ? verificationUrl : undefined
-    }, "Novo link gerado.");
+      emailEnviado: delivery.sent
+    }, `Enviamos uma nova confirmação para ${email}.`);
   } catch (error) {
     return handleApiError(error);
   }

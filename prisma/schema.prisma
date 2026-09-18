@@ -37,6 +37,7 @@ model Usuario {
   planos             PlanoEstudo[]
   materiais          MaterialEstudo[]
   tokensVerificacao  TokenVerificacao[]
+  tokensRedefinicao  TokenRedefinicaoSenha[]
   sessoes            Sessao[]
 
   @@map("User")
@@ -55,6 +56,18 @@ model Sessao {
 }
 
 model TokenVerificacao {
+  id          String   @id @default(cuid())
+  usuarioId   String
+  tokenHash   String   @unique
+  expiraEm    DateTime
+  criadoEm    DateTime @default(now())
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([expiraEm])
+}
+
+model TokenRedefinicaoSenha {
   id          String   @id @default(cuid())
   usuarioId   String
   tokenHash   String   @unique

@@ -1,11 +1,16 @@
 import { z } from "zod";
 
+const optionalText = z.preprocess(
+  (value) => value === "" ? undefined : value,
+  z.string().min(1).optional()
+);
+
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1).optional(),
   APP_URL: z.string().url().default("http://localhost:3000"),
   APP_SECRET: z.string().min(32).optional(),
-  RESEND_API_KEY: z.string().min(1).optional(),
-  EMAIL_FROM: z.string().min(1).optional(),
+  RESEND_API_KEY: optionalText,
+  EMAIL_FROM: optionalText,
   NODE_ENV: z.enum(["development", "test", "production"]).default("development")
 });
 

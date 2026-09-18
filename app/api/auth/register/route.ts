@@ -15,6 +15,9 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   try {
+    if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
+      return fail("O envio de confirmação ainda não foi configurado.", 503);
+    }
     const input = schema.parse(await request.json());
     const email = normalizeEmail(input.email);
     const existente = await prisma.usuario.findUnique({ where: { email } });
@@ -35,9 +38,8 @@ export async function POST(request: Request) {
 
     return created({
       email: usuario.email,
-      emailEnviado: delivery.sent,
-      verificationUrl: env.NODE_ENV === "development" ? verificationUrl : undefined
-    }, delivery.sent ? "Conta criada. Confirme seu e-mail." : "Conta criada. Use o link local para confirmar.");
+      emailEnviado: delivery.sent
+    }, `Conta criada. Enviamos a confirmação para ${usuario.email}.`);
   } catch (error) {
     return handleApiError(error);
   }
