@@ -61,7 +61,6 @@ export default async function MaterialsPage({
       initialMaterials={materials}
       selectedPlan={selectedPlan}
       selectedSubject={selectedSubject}
-      analysisAvailable={Boolean(process.env.OPENAI_API_KEY?.trim())}
     />
   );
 }

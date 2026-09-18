@@ -22,13 +22,8 @@ export async function POST(
     if (!material) return fail("Material não encontrado na sua conta.", 404);
     if (material.analiseStatus === "CONCLUIDA")
       return ok(null, "O resumo deste PDF já está pronto.");
-    if (!process.env.OPENAI_API_KEY?.trim())
-      return fail(
-        "A análise automática ainda não está disponível. Seu PDF está salvo; tente gerar o resumo mais tarde.",
-        503,
-      );
     const started = new Date();
-    // Atomic claim: concurrent clicks cannot trigger multiple paid analyses. Expired claims can be retried.
+    // Atomic claim: only one parser runs per material. Expired claims can be retried.
     const claim = await prisma.materialEstudo.updateMany({
       where: {
         id,
@@ -53,17 +48,14 @@ export async function POST(
       );
     try {
       const bytes = await readMaterialPdf(material.urlArquivo, user.id);
-      const analysis = await analyzePdf(bytes, material.nomeArquivo, {
-        materia: material.materia?.titulo ?? "Não informada",
-        objetivo: material.plano?.titulo ?? "Estudo geral",
-        tipo: material.plano?.tipo ?? "OUTRO",
-      });
+      const analysis = await analyzePdf(bytes, material.materia?.titulo ?? "");
       await prisma.$transaction(async (tx) => {
         const updated = await tx.materialEstudo.updateMany({
           where: { id, usuarioId: user.id, analiseIniciadaEm: started },
           data: {
             resumo: analysis.resumo,
             pontosEstudo: analysis.pontosEstudo,
+            paginas: analysis.paginas,
             analiseStatus: "CONCLUIDA",
             analiseErro: null,
           },

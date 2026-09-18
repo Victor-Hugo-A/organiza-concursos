@@ -2,6 +2,7 @@
   "name": "organiza",
   "version": "1.0.0",
   "private": true,
+  "engines": { "node": ">=22.13.0" },
   "description": "Plataforma pessoal para organizar materiais e planos de estudo.",
   "scripts": {
     "dev": "next dev",
@@ -9,6 +10,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test:pdf": "tsx --test tests/pdf-analysis.test.ts",
     "format": "prettier --write .",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -25,6 +27,7 @@
     "jose": "^6.0.12",
     "lucide-react": "^0.525.0",
     "next": "^15.5.0",
+    "pdfjs-dist": "6.3.289",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.62.0",
