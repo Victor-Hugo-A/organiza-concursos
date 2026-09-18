@@ -1,11 +1,23 @@
-import { ArrowRight, CalendarDays, MoreHorizontal, Plus, Target } from "lucide-react";
 import Link from "next/link";
+import { ArrowRight, CalendarDays, Target } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { PlanCreator } from "@/components/plan-creator";
 
-const plans = [
-  { name: "ENEM 2026", type: "Vestibular", progress: "68%", topics: "12 de 18 tópicos explorados", tone: "bg-emerald-900", bar: "w-[68%]" },
-  { name: "Analista administrativo", type: "Concurso público", progress: "24%", topics: "5 de 21 tópicos explorados", tone: "bg-[#315d75]", bar: "w-[24%]" }
-];
+export const dynamic = "force-dynamic";
 
-export default function PlansPage() {
-  return <div className="mx-auto max-w-6xl"><div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="text-sm font-semibold text-emerald-800">Seus caminhos</p><h1 className="mt-1 text-3xl font-semibold tracking-[-0.04em] text-stone-950 sm:text-4xl">Meus planos</h1><p className="mt-2 text-stone-600">Separe cada objetivo e mantenha o próximo passo visível.</p></div><button className="btn-primary"><Plus className="h-4 w-4" /> Criar plano</button></div><section className="mt-8 grid gap-5 lg:grid-cols-2">{plans.map((plan) => <article key={plan.name} className="overflow-hidden rounded-3xl border border-stone-200 bg-white"><div className={plan.tone + " p-6 text-white"}><div className="flex items-start justify-between"><span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-white/70"><Target className="h-4 w-4" /> {plan.type}</span><button className="text-white/70 hover:text-white" aria-label="Mais opções"><MoreHorizontal className="h-5 w-5" /></button></div><h2 className="mt-8 text-2xl font-semibold tracking-tight">{plan.name}</h2><div className="mt-6 flex items-end justify-between"><div className="h-2 flex-1 overflow-hidden rounded-full bg-white/15"><div className={plan.bar + " h-full rounded-full bg-emerald-300"} /></div><strong className="ml-4 text-xl">{plan.progress}</strong></div></div><div className="flex items-center justify-between gap-3 p-5"><div><p className="text-sm font-semibold text-stone-800">{plan.topics}</p><p className="mt-1 flex items-center gap-1.5 text-xs text-stone-500"><CalendarDays className="h-3.5 w-3.5" /> última atividade hoje</p></div><Link href="/app/materiais" className="inline-flex items-center gap-1 text-sm font-bold text-emerald-800">Abrir <ArrowRight className="h-4 w-4" /></Link></div></article>)}</section><section className="mt-8 rounded-3xl border border-dashed border-stone-300 bg-white/60 p-7 text-center"><span className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-stone-100 text-stone-700"><Plus className="h-5 w-5" /></span><h2 className="mt-4 text-lg font-semibold text-stone-950">Um novo objetivo na sua agenda?</h2><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-stone-600">Crie um plano separado para dar nome, foco e contexto ao que você quer conquistar.</p><button className="btn-secondary mt-5">Criar outro plano</button></section></div>;
+const typeLabels = { ENEM: "ENEM", PAS: "PAS", CONCURSO_PUBLICO: "Concurso público", VESTIBULAR: "Vestibular", OUTRO: "Outro objetivo" };
+
+export default async function PlansPage() {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  const plans = await prisma.planoEstudo.findMany({
+    where: { usuarioId: user.id, arquivado: false },
+    orderBy: { atualizadoEm: "desc" },
+    include: { _count: { select: { materiais: true, materias: true } } }
+  });
+
+  return <div className="mx-auto max-w-6xl"><div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="text-sm font-semibold text-emerald-800">Seus caminhos</p><h1 className="mt-1 text-3xl font-semibold tracking-[-0.04em] text-stone-950 sm:text-4xl">Meus planos</h1><p className="mt-2 text-stone-600">Separe cada objetivo e mantenha o próximo passo visível.</p></div><PlanCreator /></div>
+    {plans.length === 0 ? <section className="mt-8 rounded-3xl border border-dashed border-stone-300 bg-white/60 p-10 text-center"><span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-800"><Target className="h-5 w-5" /></span><h2 className="mt-4 text-xl font-semibold text-stone-950">Crie seu primeiro plano</h2><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-stone-600">Dê um nome ao objetivo para organizar materiais e matérias dentro dele.</p><div className="mt-5 flex justify-center"><PlanCreator /></div></section> : <section className="mt-8 grid gap-5 lg:grid-cols-2">{plans.map((plan) => <article key={plan.id} className="overflow-hidden rounded-3xl border border-stone-200 bg-white"><div className="bg-emerald-900 p-6 text-white"><span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-emerald-200"><Target className="h-4 w-4" /> {typeLabels[plan.tipo]}</span><h2 className="mt-8 text-2xl font-semibold tracking-tight">{plan.titulo}</h2></div><div className="flex items-center justify-between gap-3 p-5"><div><p className="text-sm font-semibold text-stone-800">{plan._count.materiais} materiais · {plan._count.materias} matérias</p><p className="mt-1 flex items-center gap-1.5 text-xs text-stone-500"><CalendarDays className="h-3.5 w-3.5" /> atualizado {new Intl.DateTimeFormat("pt-BR").format(plan.atualizadoEm)}</p></div><Link href="/app/materiais" className="inline-flex items-center gap-1 text-sm font-bold text-emerald-800">Materiais <ArrowRight className="h-4 w-4" /></Link></div></article>)}</section>}
+  </div>;
 }

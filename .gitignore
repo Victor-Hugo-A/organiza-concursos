@@ -20,6 +20,9 @@
 # Vercel
 .vercel/
 
+# Local development uploads
+/public/uploads/
+
 # Test and coverage output
 /coverage/
 

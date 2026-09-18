@@ -1,17 +1,47 @@
 import Link from "next/link";
-import { ArrowRight, CalendarClock, ChevronRight, FileText, Plus, Target } from "lucide-react";
+import { ArrowRight, CalendarClock, FileText, Plus, Target } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-const materials = [
-  { title: "Brasil República.pdf", plan: "ENEM 2026", tags: ["Era Vargas", "Política"] },
-  { title: "Funções orgânicas — slides", plan: "ENEM 2026", tags: ["Química", "Carbono"] },
-  { title: "Direito constitucional", plan: "Analista administrativo", tags: ["CF/88", "Princípios"] }
-];
+export const dynamic = "force-dynamic";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  const [plans, materials, nextReview] = await Promise.all([
+    prisma.planoEstudo.findMany({
+      where: { usuarioId: user.id, arquivado: false },
+      orderBy: { atualizadoEm: "desc" },
+      take: 2,
+      include: { _count: { select: { materiais: true, materias: true } } }
+    }),
+    prisma.materialEstudo.findMany({
+      where: { usuarioId: user.id },
+      orderBy: { atualizadoEm: "desc" },
+      take: 3,
+      include: { plano: true, palavrasChave: true }
+    }),
+    prisma.revisao.findFirst({
+      where: { material: { usuarioId: user.id }, status: "PENDENTE" },
+      orderBy: { agendadaPara: "asc" },
+      include: { material: true }
+    })
+  ]);
+
+  const firstName = user.nome.trim().split(/\s+/)[0];
+  const today = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
+
   return <div className="mx-auto max-w-6xl">
-    <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="text-sm font-semibold text-emerald-800">Quarta-feira, 17 de setembro</p><h1 className="mt-1 text-3xl font-semibold tracking-[-0.04em] text-stone-950 sm:text-4xl">Bom dia, Marina.</h1><p className="mt-2 text-stone-600">Um pequeno avanço de cada vez já é caminho.</p></div><Link href="/app/materiais" className="btn-primary"><Plus className="h-4 w-4" /> Adicionar material</Link></div>
-    <section className="mt-8 grid gap-4 md:grid-cols-3"><div className="rounded-2xl bg-emerald-900 p-5 text-white md:col-span-2"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-200">Plano em foco</p><h2 className="mt-2 text-2xl font-semibold">ENEM 2026</h2></div><span className="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold">68%</span></div><div className="mt-7 h-2 overflow-hidden rounded-full bg-white/15"><div className="h-full w-[68%] rounded-full bg-emerald-300" /></div><div className="mt-3 flex items-center justify-between text-sm text-emerald-100"><span>12 tópicos explorados</span><Link href="/app/planos" className="inline-flex items-center gap-1 font-semibold text-white">Ver plano <ArrowRight className="h-3.5 w-3.5" /></Link></div></div><div className="rounded-2xl border border-stone-200 bg-[#fff8e7] p-5"><CalendarClock className="h-5 w-5 text-amber-700" /><p className="mt-6 text-xs font-bold uppercase tracking-[0.14em] text-amber-800">Próxima revisão</p><p className="mt-2 text-lg font-semibold text-stone-950">Funções orgânicas</p><p className="mt-1 text-sm text-stone-600">Hoje, às 19:00</p></div></section>
-    <section className="mt-10"><div className="flex items-end justify-between"><div><p className="text-sm font-bold uppercase tracking-[0.14em] text-stone-400">Para retomar</p><h2 className="mt-1 text-2xl font-semibold tracking-tight text-stone-950">Seus materiais recentes</h2></div><Link href="/app/materiais" className="hidden items-center gap-1 text-sm font-semibold text-emerald-800 sm:inline-flex">Ver todos <ArrowRight className="h-4 w-4" /></Link></div><div className="mt-5 grid gap-3">{materials.map((material) => <Link href="/app/materiais" key={material.title} className="group flex items-center gap-4 rounded-2xl border border-stone-200 bg-white p-4 transition hover:border-emerald-300 hover:shadow-sm"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-rose-50 text-rose-700"><FileText className="h-5 w-5" /></span><div className="min-w-0 flex-1"><p className="truncate font-semibold text-stone-900">{material.title}</p><p className="mt-0.5 text-sm text-stone-500">{material.plan}</p><div className="mt-2 flex flex-wrap gap-1.5">{material.tags.map((tag) => <span key={tag} className="badge">{tag}</span>)}</div></div><ChevronRight className="h-5 w-5 text-stone-300 transition group-hover:translate-x-0.5 group-hover:text-emerald-800" /></Link>)}</div></section>
-    <section className="mt-10 rounded-2xl border border-dashed border-stone-300 bg-white/60 p-6"><div className="flex items-start gap-4"><span className="grid h-11 w-11 place-items-center rounded-xl bg-stone-100 text-stone-700"><Target className="h-5 w-5" /></span><div><h2 className="font-semibold text-stone-950">Seu ritmo, suas escolhas.</h2><p className="mt-1 max-w-2xl text-sm leading-6 text-stone-600">Crie outro plano quando quiser separar uma prova, uma matéria ou uma nova meta de estudo.</p><Link href="/app/planos" className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-emerald-800">Organizar meus planos <ArrowRight className="h-4 w-4" /></Link></div></div></section>
+    <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="text-sm font-semibold capitalize text-emerald-800">{today}</p><h1 className="mt-1 text-3xl font-semibold tracking-[-0.04em] text-stone-950 sm:text-4xl">Bom dia, {firstName}.</h1><p className="mt-2 text-stone-600">Seu espaço mostra somente o que pertence à sua conta.</p></div><Link href="/app/materiais" className="btn-primary"><Plus className="h-4 w-4" /> Adicionar material</Link></div>
+
+    <section className="mt-8 grid gap-4 md:grid-cols-3">
+      <div className="rounded-2xl bg-emerald-900 p-5 text-white md:col-span-2"><Target className="h-5 w-5 text-emerald-200" /><p className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-emerald-200">Planos ativos</p><p className="mt-2 text-3xl font-semibold">{plans.length}</p><p className="mt-2 text-sm text-emerald-100">{plans.length ? `${plans.reduce((total, plan) => total + plan._count.materiais, 0)} materiais organizados nos planos recentes` : "Crie seu primeiro plano para começar a organizar o estudo."}</p><Link href="/app/planos" className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-white">Ver meus planos <ArrowRight className="h-4 w-4" /></Link></div>
+      <div className="rounded-2xl border border-stone-200 bg-[#fff8e7] p-5"><CalendarClock className="h-5 w-5 text-amber-700" /><p className="mt-6 text-xs font-bold uppercase tracking-[0.14em] text-amber-800">Próxima revisão</p><p className="mt-2 text-lg font-semibold text-stone-950">{nextReview?.titulo ?? "Nenhuma agendada"}</p><p className="mt-1 text-sm text-stone-600">{nextReview ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(nextReview.agendadaPara) : "As revisões aparecerão aqui."}</p></div>
+    </section>
+
+    <section className="mt-10"><div className="flex items-end justify-between"><div><p className="text-sm font-bold uppercase tracking-[0.14em] text-stone-400">Para retomar</p><h2 className="mt-1 text-2xl font-semibold tracking-tight text-stone-950">Materiais recentes</h2></div>{materials.length > 0 && <Link href="/app/materiais" className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-800">Ver todos <ArrowRight className="h-4 w-4" /></Link>}</div>
+      {materials.length === 0 ? <div className="mt-5 rounded-2xl border border-dashed border-stone-300 bg-white/60 p-8 text-center"><FileText className="mx-auto h-6 w-6 text-stone-400" /><h3 className="mt-3 font-semibold text-stone-950">Seu acervo está vazio</h3><p className="mt-1 text-sm text-stone-600">Adicione um PDF e escolha as palavras-chave importantes.</p><Link href="/app/materiais" className="btn-secondary mt-5">Adicionar primeiro material</Link></div> : <div className="mt-5 grid gap-3">{materials.map((material) => <article key={material.id} className="flex items-center gap-4 rounded-2xl border border-stone-200 bg-white p-4"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-rose-50 text-rose-700"><FileText className="h-5 w-5" /></span><div className="min-w-0 flex-1"><p className="truncate font-semibold text-stone-900">{material.titulo}</p><p className="mt-0.5 text-sm text-stone-500">{material.plano?.titulo ?? "Sem plano"}</p><div className="mt-2 flex flex-wrap gap-1.5">{material.palavrasChave.map((tag) => <span key={tag.id} className="badge">{tag.termo}</span>)}</div></div></article>)}</div>}
+    </section>
   </div>;
 }

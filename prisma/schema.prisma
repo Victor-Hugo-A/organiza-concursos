@@ -28,16 +28,18 @@ enum RevisaoStatus {
 
 model Usuario {
   id                 String              @id @default(cuid())
-  nome               String
+  nome               String              @map("name")
   email              String              @unique
-  senhaHash          String
-  emailVerificadoEm  DateTime?
-  criadoEm           DateTime            @default(now())
-  atualizadoEm       DateTime            @updatedAt
+  senhaHash          String              @map("passwordHash")
+  emailVerificadoEm  DateTime?           @map("emailVerifiedAt")
+  criadoEm           DateTime            @default(now()) @map("createdAt")
+  atualizadoEm       DateTime            @updatedAt @map("updatedAt")
   planos             PlanoEstudo[]
   materiais          MaterialEstudo[]
   tokensVerificacao  TokenVerificacao[]
   sessoes            Sessao[]
+
+  @@map("User")
 }
 
 model Sessao {
