@@ -7,11 +7,12 @@ import { useState } from "react";
 import { Bell, BookOpenCheck, CalendarClock, ChevronDown, FileText, LayoutDashboard, LogOut, Plus, Target } from "lucide-react";
 import clsx from "clsx";
 import { BrandMark } from "@/components/brand-mark";
+import { BackLink } from "@/components/back-link";
 
 const items = [
   { href: "/app", label: "Visão geral", icon: LayoutDashboard },
   { href: "/app/planos", label: "Meus planos", icon: Target },
-  { href: "/app/materiais", label: "Materiais", icon: FileText },
+  { href: "/app/materiais", label: "Matérias", icon: FileText },
   { href: "/app/revisoes", label: "Revisões", icon: CalendarClock }
 ];
 
@@ -35,6 +36,6 @@ export function StudyShell({ children, user }: { children: React.ReactNode; user
       <div className="mt-10 hidden rounded-2xl bg-[#f0f8f3] p-4 lg:block"><BookOpenCheck className="h-5 w-5 text-emerald-800" /><p className="mt-3 text-sm font-semibold text-stone-900">Seu espaço cresce com você.</p><p className="mt-1 text-xs leading-5 text-stone-600">Organize, conecte e volte de onde parou.</p></div>
       <div className="relative mt-6 hidden lg:block"><button onClick={() => setAccountOpen((value) => !value)} className="flex w-full items-center justify-between rounded-xl border border-stone-200 p-3 text-left"><span className="flex min-w-0 items-center gap-2"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-amber-100 text-xs font-bold text-amber-800">{initials}</span><span className="min-w-0"><span className="block truncate text-sm font-semibold text-stone-900">{user.nome}</span><span className="block truncate text-xs text-stone-500">{user.email}</span></span></span><ChevronDown className="h-4 w-4 shrink-0 text-stone-400" /></button>{accountOpen && <div className="absolute bottom-full mb-2 w-full rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg"><button onClick={logout} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"><LogOut className="h-4 w-4" /> Sair da conta</button></div>}</div>
     </aside>
-    <div className="min-w-0 lg:pl-[16.5rem]"><header className="flex items-center justify-between border-b border-stone-200 bg-white/75 px-5 py-4 backdrop-blur lg:px-10"><div className="flex gap-4 overflow-x-auto lg:hidden">{items.map(({ href, label }) => <Link key={href} href={href} className={clsx("whitespace-nowrap text-sm font-semibold", pathname === href ? "text-emerald-800" : "text-stone-500")}>{label}</Link>)}</div><div className="hidden lg:block" /><div className="flex items-center gap-2"><button onClick={logout} className="text-sm font-semibold text-stone-500 hover:text-rose-700 lg:hidden">Sair</button><button aria-label="Notificações" className="grid h-10 w-10 place-items-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:bg-stone-50"><Bell className="h-4 w-4" /></button></div></header><main className="px-5 py-8 lg:px-10 lg:py-10">{children}</main></div>
+    <div className="min-w-0 lg:pl-[16.5rem]"><header className="flex items-center justify-between border-b border-stone-200 bg-white/75 px-5 py-4 backdrop-blur lg:px-10"><div className="flex gap-4 overflow-x-auto lg:hidden">{items.map(({ href, label }) => <Link key={href} href={href} className={clsx("whitespace-nowrap text-sm font-semibold", pathname === href ? "text-emerald-800" : "text-stone-500")}>{label}</Link>)}</div><div className="hidden lg:block" /><div className="flex items-center gap-2"><button onClick={logout} className="text-sm font-semibold text-stone-500 hover:text-rose-700 lg:hidden">Sair</button><button aria-label="Notificações" className="grid h-10 w-10 place-items-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:bg-stone-50"><Bell className="h-4 w-4" /></button></div></header><main className="px-5 py-8 lg:px-10 lg:py-10">{pathname !== "/app/materiais" && <div className="mx-auto max-w-6xl"><BackLink href={pathname === "/app" ? "/" : "/app"}>{pathname === "/app" ? "Voltar ao início" : "Voltar à visão geral"}</BackLink></div>}{children}</main></div>
   </div>;
 }

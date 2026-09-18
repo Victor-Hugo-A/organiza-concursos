@@ -1,0 +1,6 @@
+ALTER TABLE "MaterialEstudo"
+ADD COLUMN "resumo" TEXT,
+ADD COLUMN "pontosEstudo" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN "analiseStatus" TEXT NOT NULL DEFAULT 'PENDENTE',
+ADD COLUMN "analiseErro" TEXT,
+ADD COLUMN "analiseIniciadaEm" TIMESTAMP(3);

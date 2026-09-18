@@ -118,6 +118,11 @@ model MaterialEstudo {
   tipo              MaterialTipo      @default(PDF)
   tamanhoBytes      Int?
   paginas           Int?
+  resumo            String?
+  pontosEstudo      String[]          @default([])
+  analiseStatus     String            @default("PENDENTE")
+  analiseErro       String?
+  analiseIniciadaEm  DateTime?
   criadoEm          DateTime          @default(now())
   atualizadoEm      DateTime          @updatedAt
   usuario           Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
