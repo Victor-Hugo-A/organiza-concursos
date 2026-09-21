@@ -100,9 +100,25 @@ test("arquivo corrompido retorna erro compreensível", async () => {
 
 test("limite de páginas recusa análise incompleta silenciosa", async () => {
   await assert.rejects(
-    analyzePdf(createTextPdf(Array.from({ length: 201 }, () => []))),
-    /mais de 200 páginas/,
+    analyzePdf(createTextPdf(Array.from({ length: 801 }, () => []))),
+    /mais de 800 páginas/,
   );
+});
+
+test("documento com mais de 200 páginas é lido por inteiro", async () => {
+  const pages = Array.from({ length: 201 }, (_, index) => {
+    const alphabet = "abcdefghijklmnopqrstuvwxyz";
+    const topic = `tema${alphabet[Math.floor(index / alphabet.length)]}${alphabet[index % alphabet.length]}`;
+    return [
+      topic.toLocaleUpperCase("pt-BR"),
+      `O estudo de ${topic} explica uma relação relevante para a compreensão do material.`,
+      `A revisão de ${topic} ajuda a organizar os pontos importantes deste capítulo.`,
+    ];
+  });
+  const result = await analyzePdf(createTextPdf(pages));
+  assert.equal(result.paginas, 201);
+  assert.match(result.resumo, /\(p\. [1-9]\)/);
+  assert.match(result.resumo, /\(p\. (?:19[0-9]|20[01])\)/);
 });
 
 test("cabeçalhos repetidos e perguntas não viram afirmações no resumo", () => {

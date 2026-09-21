@@ -43,7 +43,7 @@ export function LoginForm({ verified = false, passwordReset = false }: { verifie
     }
   }
 
-  return <form className="mt-7 grid gap-4" onSubmit={submit}>
+  return <form className="mt-5 grid gap-3" onSubmit={submit}>
     {verified && <p className="rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">E-mail confirmado. Agora você já pode entrar.</p>}
     {passwordReset && <p className="rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">Senha atualizada. Entre com sua nova senha.</p>}
     {error && <p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm font-semibold text-rose-700">{error}</p>}

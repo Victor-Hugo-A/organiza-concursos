@@ -1,13 +1,18 @@
 // Isolated PDF parser. Invoked by lib/pdf-analysis.ts; no separate service is needed.
 import { parentPort, workerData } from "node:worker_threads";
 import { createRequire } from "node:module";
+import { mkdirSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
-import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+import { getDocument, OPS } from "pdfjs-dist/legacy/build/pdf.mjs";
 
 const require = createRequire(import.meta.url);
 const pdfRoot = path.dirname(require.resolve("pdfjs-dist/package.json"));
-const MAX_PAGES = 200;
-const MAX_CHARACTERS = 1_000_000;
+const MAX_PAGES = 800;
+const MAX_CHARACTERS = 2_000_000;
+const MAX_OCR_PAGES = 80;
+const OCR_TEXT_THRESHOLD = 40;
+const ocrCachePath = path.join(os.tmpdir(), "organiza-tesseract");
 
 function pageText(items) {
   const lines = [];
@@ -22,7 +27,6 @@ function pageText(items) {
     const height = Math.abs(item.height) || 12;
     if (line.y !== null && Math.abs(y - line.y) > Math.max(3, height * 0.5)) flush();
     if (line.y === null) { line.y = y; line.height = height; line.x = item.transform[4]; }
-    // Text items often split a single word; use positions to preserve those words.
     const previous = line.endX;
     if (line.text && previous !== undefined && item.transform[4] - previous > height * 0.12 && !/\s$/.test(line.text)) line.text += " ";
     line.text += item.str;
@@ -48,7 +52,36 @@ function pageText(items) {
   return blocks.join("\n\n");
 }
 
+async function imageForOcr(documentPage) {
+  const { createCanvas } = require("@napi-rs/canvas");
+  const initial = documentPage.getViewport({ scale: 1 });
+  const scale = Math.min(2, Math.max(1.35, 1600 / initial.width));
+  const viewport = documentPage.getViewport({ scale });
+  const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+  const context = canvas.getContext("2d");
+  await documentPage.render({ canvasContext: context, viewport, background: "#ffffff" }).promise;
+  return canvas.toBuffer("image/png");
+}
+
+async function readWithOcr(documentPage, worker) {
+  const image = await imageForOcr(documentPage);
+  const result = await worker.recognize(image, {}, { text: true });
+  return result.data.text.replace(/\r/g, "").trim();
+}
+
+async function hasRenderableImage(documentPage) {
+  const operators = await documentPage.getOperatorList();
+  const imageOperators = new Set([
+    OPS.paintImageXObject,
+    OPS.paintImageMaskXObject,
+    OPS.paintSolidColorImageMask,
+    OPS.paintJpegXObject,
+  ]);
+  return operators.fnArray.some((operator) => imageOperators.has(operator));
+}
+
 let task;
+let ocrWorker;
 try {
   task = getDocument({
     data: workerData.bytes,
@@ -65,19 +98,43 @@ try {
   if (pdf.numPages > MAX_PAGES) throw new Error("TOO_MANY_PAGES");
   const pages = [];
   let characters = 0;
+  let ocrPages = 0;
   for (let page = 1; page <= pdf.numPages; page++) {
     const documentPage = await pdf.getPage(page);
     const content = await documentPage.getTextContent();
-    const text = pageText(content.items).normalize("NFKC");
+    let text = pageText(content.items).normalize("NFKC");
+    let source = "text";
+    if (
+      text.replace(/\s/g, "").length < OCR_TEXT_THRESHOLD &&
+      await hasRenderableImage(documentPage)
+    ) {
+      if (ocrPages >= MAX_OCR_PAGES) throw new Error("TOO_MANY_OCR_PAGES");
+      if (!ocrWorker) {
+        const { createWorker } = require("tesseract.js");
+        mkdirSync(ocrCachePath, { recursive: true });
+        ocrWorker = await createWorker("por+eng", 1, {
+          logger: () => {},
+          cachePath: ocrCachePath,
+        });
+      }
+      text = await readWithOcr(documentPage, ocrWorker);
+      source = "ocr";
+      ocrPages++;
+    }
     characters += text.length;
     if (characters > MAX_CHARACTERS) throw new Error("TOO_MUCH_TEXT");
-    pages.push({ page, text });
+    pages.push({ page, text, source });
     documentPage.cleanup();
   }
   parentPort.postMessage({ success: true, pages });
 } catch (error) {
-  const code = error?.name === "PasswordException" ? "PASSWORD" : error?.message === "TOO_MANY_PAGES" || error?.message === "TOO_MUCH_TEXT" ? error.message : "INVALID_PDF";
+  const code = error?.name === "PasswordException"
+    ? "PASSWORD"
+    : ["TOO_MANY_PAGES", "TOO_MANY_OCR_PAGES", "TOO_MUCH_TEXT"].includes(error?.message)
+      ? error.message
+      : "INVALID_PDF";
   parentPort.postMessage({ success: false, code });
 } finally {
+  await ocrWorker?.terminate().catch(() => undefined);
   await task?.destroy();
 }

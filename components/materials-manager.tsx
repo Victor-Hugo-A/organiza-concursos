@@ -564,9 +564,9 @@ export function MaterialsManager({
                   sua próxima revisão.
                 </p>
                 <p className="mt-3 text-xs leading-5 text-stone-500">
-                  PDF de até 4 MB e 200 páginas, com texto selecionável. O
-                  resumo é preparado na própria plataforma, sem envio a serviços
-                  de IA.
+                  PDF de até 4 MB e 800 páginas. Slides e documentos
+                  digitalizados também são lidos por OCR local. O resumo é
+                  preparado na própria plataforma, sem envio do seu PDF a serviços de IA.
                 </p>
               </div>
               <div className="grid content-start gap-4">

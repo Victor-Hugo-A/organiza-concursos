@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { fail, handleApiError, ok } from "@/lib/api-response";
 import { analyzePdf, PdfAnalysisError } from "@/lib/pdf-analysis";
 import { readMaterialPdf } from "@/lib/material-files";
+import { buildReviewSchedule } from "@/lib/review-schedule";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -67,6 +68,9 @@ export async function POST(
             termo,
           })),
           skipDuplicates: true,
+        });
+        await tx.revisao.createMany({
+          data: buildReviewSchedule(material.id, material.titulo),
         });
       });
       return ok(null, "Resumo e palavras-chave prontos para estudar.");
