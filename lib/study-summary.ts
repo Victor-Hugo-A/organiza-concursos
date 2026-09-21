@@ -1,14 +1,21 @@
-export type PdfPageText = { page: number; text: string };
+export type PdfPageText = {
+  page: number;
+  text: string;
+  source?: "text" | "ocr";
+};
 
 // Portuguese function words, common instructions and publishing boilerplate do not
 // identify a subject. Keep the original spelling for terms displayed to students.
 const stopWords = new Set(
-  `a ao aos aquela aquelas aquele aqueles aquilo as ate com como da das de dela delas dele deles depois dessa dessas desse desses desta destas deste destes do dos e ela elas ele eles em entre era eram essa essas esse esses esta estas este estes eu foi foram ha isso isto ja la lhe lhes mais mas me mesmo meu meus minha minhas muito na nas nao nem no nos nossa nossas nosso nossos num numa o os ou para pela pelas pelo pelos por porque qual quais quando que quem se sem ser sera seu seus sua suas sao so sobre tambem te tem temos ter teve tipo toda todas todo todos tu um uma umas uns voce voces pode podem podemos deve devem devera sendo sido seja sejam sao esta estao estas estavam estava sao sao sao sao sao texto textos exemplo exemplos questao questoes alternativa alternativas assinale correta correto incorreta incorreto resposta respostas gabarito exercicio exercicios atividade atividades aula aulas pagina paginas professor professora aluno alunos material materiais conteudo conteudos capitulo unidade introducao conclusao objetivo objetivos estudo estudos observe veja seguir abaixo acima acordo forma maneira atraves partir cada caso casos ainda assim apenas tanto quanto portanto porem pois entao alem durante antes apos dentro fora segundo primeira primeiro parte partes etc www http https direitos reservados autor autora editora curso cursos pdf slide slides todos copyright`.split(
+  `a ao aos aquela aquelas aquele aqueles aquilo as ate com como da das de dela delas dele deles depois dessa dessas desse desses desta destas deste estes do dos e ela elas ele eles em entre era eram essa essas esse esses esta estas este estes eu foi foram ha isso isto ja la lhe lhes mais mas me mesmo meu meus minha minhas muito na nas nao nem no nos nossa nossas nosso nossos num numa o os ou para pela pelas pelo pelos por porque qual quais quando que quem se sem ser sera seu seus sua suas sao so sobre tambem te tem temos ter teve tipo toda todas todo todos tu um uma umas uns voce voces pode podem podemos deve devem devera sendo sido seja sejam sao esta estao estas estavam estava sao sao sao sao sao texto textos example examples question questions answer answers correct incorrect exercise exercises activity activities lesson lessons page pages teacher student material materials content contents chapter unit introduction conclusion objective objectives study studies observe see below above according form way through from each case cases still only both therefore however because then during before after inside outside first second part parts etc the and are is was were be been being to of in on for with by from at as that this these those it its their they them we our you your can could may might will would should have has had not no yes than into about also more most very much all any some such other another each either neither both between while where when what which who whose why how do does did done text texts www http https rights reserved author editor course courses pdf slide slides copyright`.split(
     /\s+/,
   ),
 );
 for (const word of [
   "sempre",
+  "sentence",
+  "century",
+  "new",
   "cebraspe",
   "fgv",
   "fcc",
@@ -54,6 +61,36 @@ type Term = {
   score: number;
 };
 
+function isExamPrompt(value: string) {
+  return /\b(?:according to (?:the )?text|considering (?:the )?text|judge (?:the )?following|following (?:suggestion|items?|question)|correct to infer|acceptable translation|presence of inverted commas|the use of .{0,80} indicat(?:e|es)|text focuses on showing|assinale|marque|julgue|alternativa correta)\b/i.test(
+    value,
+  );
+}
+
+function joinBrokenLines(lines: string[]) {
+  const paragraphs: string[] = [];
+  let paragraph = "";
+  const flush = () => {
+    if (paragraph) paragraphs.push(paragraph);
+    paragraph = "";
+  };
+  for (const line of lines) {
+    const heading =
+      line.length < 90 &&
+      line === line.toLocaleUpperCase("pt-BR") &&
+      /\p{L}/u.test(line);
+    if (heading) {
+      flush();
+      paragraphs.push(line);
+      continue;
+    }
+    if (paragraph && /[.!?][””"']?$/.test(paragraph)) flush();
+    paragraph += (paragraph ? " " : "") + line;
+  }
+  flush();
+  return paragraphs;
+}
+
 function cleanPages(pages: PdfPageText[]) {
   const recurring = new Map<string, Set<number>>();
   for (const page of pages) {
@@ -71,10 +108,11 @@ function cleanPages(pages: PdfPageText[]) {
   }
   return pages.map((page) => ({
     ...page,
-    text: page.text
-      .replace(/\u00ad/g, "")
-      .split(/\n+/)
-      .filter((line) => {
+    text: joinBrokenLines(
+      page.text
+        .replace(/\u00ad/g, "")
+        .split(/\n+/)
+        .filter((line) => {
         const trimmed = line.trim();
         if (
           !trimmed ||
@@ -82,7 +120,7 @@ function cleanPages(pages: PdfPageText[]) {
         )
           return false;
         if (
-          /https?:\/\/|www\.|@|todos os direitos reservados|livro eletr[oô]nico.*licenciado|vedada.*reprodu[cç][aã]o|responsabiliza[cç][aã]o civil|c[oó]pia.*divulga[cç][aã]o.*distribui[cç][aã]o/i.test(
+          /https?:\/\/|www\.|@|todos os direitos reservados|livro eletr[oô]nico.*licenciado|vedada.*reprodu[cç][aã]o|responsabiliza[cç][aã]o civil|c[oó]pia.*divulga[cç][aã]o.*distribui[cç][aã]o|\(adapted\)|crc press|boca raton|\(eds?\.\)|\/n:/i.test(
             trimmed,
           )
         )
@@ -94,8 +132,9 @@ function cleanPages(pages: PdfPageText[]) {
           count >= pages.length * 0.6 &&
           trimmed.length <= 130
         );
-      })
-      .join("\n\n"),
+        })
+        .map((line) => line.trim()),
+    ).join("\n\n"),
   }));
 }
 
@@ -134,6 +173,7 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
         )
       )
         continue;
+      if (isExamPrompt(block)) continue;
       const heading = block.length < 100 && !/[.!?]$/.test(block);
       const blockTokens = words(block);
       if (heading && isLikelyPersonName(blockTokens)) continue;
@@ -181,6 +221,8 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
           /\?$|^[a-eA-E][).]\s|^(?:\(?[A-Z]+\/[^)]*\)\s*)?(?:assinale|marque|qual|quais|julgue|segundo as ideias|da leitura|afirma-se|entende-se)\b|\b(?:CEBRASPE|FGV|FCC|VUNESP|CESPE)\b|coment[aá]rio formulado pela banca/i.test(
             text,
           )
+          || isExamPrompt(text)
+          || (!/[.!?][””"']?$/.test(text) && text.length < 90)
         )
           continue;
         seenSentences.add(key);
@@ -243,8 +285,8 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
     (page) => words(page.text).length >= 5,
   ).length;
   // A long PDF needs representation from its complete progression, not only the
-  // most repetitive concept. One coverage range is created for about six pages.
-  const target = Math.min(22, Math.max(8, Math.ceil(readablePages / 6)));
+  // most repetitive concept. One coverage range is created for about five pages.
+  const target = Math.min(32, Math.max(12, Math.ceil(readablePages / 5)));
   const rangeSize = Math.max(1, Math.ceil(pages.length / target));
   const candidates = [...sentences]
     .sort((a, b) => b.score - a.score)
@@ -253,12 +295,32 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
   const pageCounts = new Map<number, number>();
   const rangeCounts = new Map<number, number>();
   let characters = 0;
+  const select = (index: number) => {
+    const [next] = candidates.splice(index, 1);
+    selected.push(next);
+    characters += next.text.length;
+    pageCounts.set(next.page, (pageCounts.get(next.page) ?? 0) + 1);
+    const range = Math.floor((next.page - 1) / rangeSize);
+    rangeCounts.set(range, (rangeCounts.get(range) ?? 0) + 1);
+  };
+  // Reserve one passage for every part of the PDF before ranking extra passages.
+  // This keeps the end of a large document from disappearing behind a repetitive
+  // high-scoring term found at the beginning.
+  const rangeTotal = Math.ceil(pages.length / rangeSize);
+  for (let range = 0; range < rangeTotal && selected.length < target; range++) {
+    const index = candidates.findIndex(
+      (candidate) =>
+        Math.floor((candidate.page - 1) / rangeSize) === range &&
+        characters + candidate.text.length <= 9000,
+    );
+    if (index >= 0) select(index);
+  }
   while (selected.length < target && candidates.length) {
     let bestIndex = -1;
     let bestScore = -1;
     for (let index = 0; index < candidates.length; index++) {
       const candidate = candidates[index];
-      if (characters + candidate.text.length > 5000) continue;
+      if (characters + candidate.text.length > 9000) continue;
       const range = Math.floor((candidate.page - 1) / rangeSize);
       const similarity = Math.max(
         0,
@@ -280,15 +342,11 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
       }
     }
     if (bestIndex < 0) break;
-    const [next] = candidates.splice(bestIndex, 1);
-    selected.push(next);
-    characters += next.text.length;
-    pageCounts.set(next.page, (pageCounts.get(next.page) ?? 0) + 1);
-    const range = Math.floor((next.page - 1) / rangeSize);
-    rangeCounts.set(range, (rangeCounts.get(range) ?? 0) + 1);
+    select(bestIndex);
   }
   selected.sort((a, b) => a.page - b.page || a.index - b.index);
   if (!selected.length || !keywords.length) return null;
+  const ocrPages = pages.filter((page) => page.source === "ocr").length;
   const partial =
     readablePages < pages.length
       ? `Resumo apenas das ${readablePages} de ${pages.length} páginas com texto extraível. Páginas sem texto podem conter imagens ou digitalizações e não estão incluídas.\n\n`
@@ -314,8 +372,12 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
     usedEvidence.add(evidence.index);
     if (reviewPoints.length >= 10) break;
   }
+  const ocrNotice =
+    ocrPages > 0
+      ? `${ocrPages} ${ocrPages === 1 ? "página foi lida" : "páginas foram lidas"} por OCR local.\n\n`
+      : "";
   return {
-    resumo: `Síntese de leitura — ${readablePages} de ${pages.length} páginas com texto extraível.\n\n${partial}${notes.join("\n\n")}`,
+    resumo: `Síntese de leitura — ${readablePages} de ${pages.length} páginas com conteúdo lido.\n\n${ocrNotice}${partial}${notes.join("\n\n")}`,
     pontosEstudo: reviewPoints,
     palavrasChave: keywords,
     paginas: pages.length,

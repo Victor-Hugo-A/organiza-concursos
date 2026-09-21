@@ -1,10 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { Bell, BookOpenCheck, CalendarClock, ChevronDown, FileText, LayoutDashboard, LogOut, Plus, Target } from "lucide-react";
+import {
+  Bell,
+  BellRing,
+  BookOpenCheck,
+  CalendarClock,
+  ChevronDown,
+  FileText,
+  LayoutDashboard,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
+  Target,
+} from "lucide-react";
 import clsx from "clsx";
 import { BrandMark } from "@/components/brand-mark";
 import { BackLink } from "@/components/back-link";
@@ -13,14 +25,43 @@ const items = [
   { href: "/app", label: "Visão geral", icon: LayoutDashboard },
   { href: "/app/planos", label: "Meus planos", icon: Target },
   { href: "/app/materiais", label: "Matérias", icon: FileText },
-  { href: "/app/revisoes", label: "Revisões", icon: CalendarClock }
+  { href: "/app/revisoes", label: "Revisões", icon: CalendarClock },
 ];
 
-export function StudyShell({ children, user }: { children: React.ReactNode; user: { nome: string; email: string } }) {
+const titles: Record<string, string> = {
+  "/app": "Visão geral",
+  "/app/planos": "Meus planos",
+  "/app/materiais": "Matérias",
+  "/app/revisoes": "Revisões",
+};
+
+type Notifications = {
+  pendingCount: number;
+  dueToday: number;
+  nextReview: { titulo: string; agendadaPara: string } | null;
+};
+
+export function StudyShell({
+  children,
+  user,
+  notifications,
+}: {
+  children: React.ReactNode;
+  user: { nome: string; email: string };
+  notifications: Notifications;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [accountOpen, setAccountOpen] = useState(false);
-  const initials = user.nome.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  const initials = user.nome
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+  const pageTitle = titles[pathname] ?? "Organiza";
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -28,14 +69,166 @@ export function StudyShell({ children, user }: { children: React.ReactNode; user
     router.refresh();
   }
 
-  return <div className="min-h-screen bg-[#f8faf9]">
-    <aside className="border-b border-stone-200 bg-white px-4 py-4 lg:fixed lg:inset-y-0 lg:w-[16.5rem] lg:border-b-0 lg:border-r lg:px-4 lg:py-6">
-      <div className="flex items-center justify-between gap-3 lg:block"><Link href="/app" className="flex items-center gap-3"><BrandMark size="sm" /><div><p className="font-bold tracking-tight text-stone-950">organiza</p><p className="text-xs text-stone-500">meu espaço</p></div></Link><Link href="/app/materiais" className="btn-primary px-3 py-2 lg:hidden"><Plus className="h-4 w-4" /> Material</Link></div>
-      <nav className="mt-6 hidden gap-1 lg:grid">{items.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className={clsx("flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition", pathname === href ? "bg-emerald-50 text-emerald-900" : "text-stone-600 hover:bg-stone-100 hover:text-stone-950")}><Icon className="h-[18px] w-[18px]" />{label}</Link>)}</nav>
-      <div className="mt-8 hidden lg:block"><Link href="/app/materiais" className="btn-primary w-full"><Plus className="h-4 w-4" /> Adicionar material</Link></div>
-      <div className="mt-10 hidden rounded-2xl bg-[#f0f8f3] p-4 lg:block"><BookOpenCheck className="h-5 w-5 text-emerald-800" /><p className="mt-3 text-sm font-semibold text-stone-900">Seu espaço cresce com você.</p><p className="mt-1 text-xs leading-5 text-stone-600">Organize, conecte e volte de onde parou.</p></div>
-      <div className="relative mt-6 hidden lg:block"><button onClick={() => setAccountOpen((value) => !value)} className="flex w-full items-center justify-between rounded-xl border border-stone-200 p-3 text-left"><span className="flex min-w-0 items-center gap-2"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-amber-100 text-xs font-bold text-amber-800">{initials}</span><span className="min-w-0"><span className="block truncate text-sm font-semibold text-stone-900">{user.nome}</span><span className="block truncate text-xs text-stone-500">{user.email}</span></span></span><ChevronDown className="h-4 w-4 shrink-0 text-stone-400" /></button>{accountOpen && <div className="absolute bottom-full mb-2 w-full rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg"><button onClick={logout} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"><LogOut className="h-4 w-4" /> Sair da conta</button></div>}</div>
-    </aside>
-    <div className="min-w-0 lg:pl-[16.5rem]"><header className="flex items-center justify-between border-b border-stone-200 bg-white/75 px-5 py-4 backdrop-blur lg:px-10"><div className="flex gap-4 overflow-x-auto lg:hidden">{items.map(({ href, label }) => <Link key={href} href={href} className={clsx("whitespace-nowrap text-sm font-semibold", pathname === href ? "text-emerald-800" : "text-stone-500")}>{label}</Link>)}</div><div className="hidden lg:block" /><div className="flex items-center gap-2"><button onClick={logout} className="text-sm font-semibold text-stone-500 hover:text-rose-700 lg:hidden">Sair</button><button aria-label="Notificações" className="grid h-10 w-10 place-items-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:bg-stone-50"><Bell className="h-4 w-4" /></button></div></header><main className="px-5 py-8 lg:px-10 lg:py-10">{pathname !== "/app/materiais" && <div className="mx-auto max-w-6xl"><BackLink href={pathname === "/app" ? "/" : "/app"}>{pathname === "/app" ? "Voltar ao início" : "Voltar à visão geral"}</BackLink></div>}{children}</main></div>
-  </div>;
+  return (
+    <div className="min-h-screen bg-[#f6f8f6]">
+      <aside className={clsx("border-b border-stone-200 bg-white transition-[width] duration-200 lg:fixed lg:inset-y-0 lg:border-b-0 lg:border-r", sidebarExpanded ? "lg:w-[17rem]" : "lg:w-[5.5rem]")}>
+        <div className="flex h-full flex-col px-4 py-4 lg:px-5 lg:py-6">
+          <div className="flex items-center justify-between gap-3">
+            <Link href="/app" className={clsx("flex min-w-0 items-center gap-3", !sidebarExpanded && "lg:justify-center") }>
+              <BrandMark size="sm" />
+              <div className={clsx(!sidebarExpanded && "lg:hidden")}>
+                <p className="font-bold tracking-tight text-stone-950">organiza</p>
+                <p className="text-xs text-stone-500">meu espaço de estudos</p>
+              </div>
+            </Link>
+            <Link href="/app/materiais" className="btn-primary px-3 py-2 lg:hidden">
+              <Plus className="h-4 w-4" /> Material
+            </Link>
+          </div>
+
+          <nav className="mt-6 hidden gap-1 lg:grid" aria-label="Navegação principal">
+            {items.map(({ href, label, icon: Icon }) => {
+              const active = pathname === href;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  title={label}
+                  className={clsx(
+                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
+                    !sidebarExpanded && "justify-center px-2",
+                    active
+                      ? "bg-emerald-50 text-emerald-950 shadow-sm ring-1 ring-emerald-100"
+                      : "text-stone-600 hover:bg-stone-100 hover:text-stone-950",
+                  )}
+                >
+                  <Icon className="h-[18px] w-[18px]" />
+                  <span className={clsx(!sidebarExpanded && "lg:hidden")}>{label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="mt-7 hidden lg:block">
+            <Link href="/app/materiais" title="Adicionar material" className={clsx("btn-primary w-full", !sidebarExpanded && "px-2") }>
+              <Plus className="h-4 w-4" />
+              <span className={clsx(!sidebarExpanded && "lg:hidden")}>Adicionar material</span>
+            </Link>
+          </div>
+
+          <div className={clsx("mt-8 hidden rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 lg:block", !sidebarExpanded && "lg:hidden")}>
+            <BookOpenCheck className="h-5 w-5 text-emerald-800" />
+            <p className="mt-3 text-sm font-semibold text-stone-900">Estudo com direção.</p>
+            <p className="mt-1 text-xs leading-5 text-stone-600">
+              Organize seus materiais e acompanhe os retornos de revisão.
+            </p>
+          </div>
+
+          <div className="relative mt-auto hidden lg:block">
+            <button
+              type="button"
+              onClick={() => setAccountOpen((value) => !value)}
+              aria-expanded={accountOpen}
+              className={clsx("flex w-full items-center justify-between rounded-xl border border-stone-200 bg-white p-3 text-left transition hover:border-stone-300", !sidebarExpanded && "justify-center p-2")}
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-amber-100 text-xs font-bold text-amber-800">{initials}</span>
+                <span className={clsx("min-w-0", !sidebarExpanded && "lg:hidden")}>
+                  <span className="block truncate text-sm font-semibold text-stone-900">{user.nome}</span>
+                  <span className="block truncate text-xs text-stone-500">{user.email}</span>
+                </span>
+              </span>
+              <ChevronDown className={clsx("h-4 w-4 shrink-0 text-stone-400", !sidebarExpanded && "lg:hidden")} />
+            </button>
+            {accountOpen && (
+              <div className={clsx("absolute bottom-full z-30 mb-2 w-full rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg", !sidebarExpanded && "w-48")}>
+                <button type="button" onClick={logout} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
+                  <LogOut className="h-4 w-4" /> Sair da conta
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </aside>
+
+      <div className={clsx("flex min-h-screen min-w-0 flex-col transition-[padding] duration-200", sidebarExpanded ? "lg:pl-[17rem]" : "lg:pl-[5.5rem]")}>
+        <header className="sticky top-0 z-20 border-b border-stone-200/90 bg-white/90 px-5 py-3 backdrop-blur lg:px-10">
+          <div className="flex w-full items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="hidden items-center gap-3 lg:flex">
+                <button
+                  type="button"
+                  onClick={() => setSidebarExpanded((value) => !value)}
+                  aria-label={sidebarExpanded ? "Fechar menu lateral" : "Abrir menu lateral"}
+                  className="grid h-10 w-10 place-items-center rounded-xl border border-stone-200 bg-white text-stone-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800"
+                >
+                  {sidebarExpanded ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+                </button>
+                <div><div className="text-xs font-medium text-stone-500">Área de estudos</div><p className="truncate text-base font-semibold text-stone-950">{pageTitle}</p></div>
+              </div>
+              <nav className="flex gap-4 overflow-x-auto lg:hidden" aria-label="Navegação principal">
+                {items.map(({ href, label }) => (
+                  <Link key={href} href={href} className={clsx("whitespace-nowrap py-1 text-sm font-semibold", pathname === href ? "text-emerald-800" : "text-stone-500")}>
+                    {label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button type="button" onClick={logout} className="text-sm font-semibold text-stone-500 hover:text-rose-700 lg:hidden">Sair</button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setNotificationsOpen((value) => !value)}
+                  aria-label="Abrir notificações de revisão"
+                  aria-expanded={notificationsOpen}
+                  className="relative grid h-10 w-10 place-items-center rounded-xl border border-stone-200 bg-white text-stone-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800"
+                >
+                  {notifications.dueToday > 0 ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                  {notifications.dueToday > 0 && <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white">{notifications.dueToday > 9 ? "9+" : notifications.dueToday}</span>}
+                </button>
+                {notificationsOpen && (
+                  <div className="absolute right-0 z-30 mt-2 w-80 rounded-2xl border border-stone-200 bg-white p-4 shadow-xl">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold text-stone-950">Lembretes de revisão</p>
+                      {notifications.dueToday > 0 && <span className="badge">{notifications.dueToday} hoje</span>}
+                    </div>
+                    {notifications.nextReview ? (
+                      <div className="mt-3 rounded-xl bg-stone-50 p-3">
+                        <p className="text-xs font-medium text-stone-500">Próximo retorno</p>
+                        <p className="mt-1 text-sm font-semibold text-stone-900">{notifications.nextReview.titulo}</p>
+                        <p className="mt-1 text-xs text-stone-500">{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(notifications.nextReview.agendadaPara))}</p>
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-sm leading-6 text-stone-600">Sua agenda está livre. Novos resumos criarão lembretes automaticamente.</p>
+                    )}
+                    <Link href="/app/revisoes" onClick={() => setNotificationsOpen(false)} className="btn-secondary mt-4 w-full text-sm">Abrir agenda{notifications.pendingCount > 0 ? ` (${notifications.pendingCount})` : ""}</Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 px-5 py-7 lg:px-10 lg:py-9">
+          {pathname !== "/app" && pathname !== "/app/materiais" && (
+            <div className="mx-auto max-w-6xl">
+              <BackLink href="/app">Voltar à visão geral</BackLink>
+            </div>
+          )}
+          {children}
+        </main>
+
+        <footer className="border-t border-stone-200 bg-white px-5 py-4 lg:px-10">
+          <div className="flex w-full flex-col justify-between gap-2 text-xs text-stone-500 sm:flex-row sm:items-center">
+            <p>© {new Date().getFullYear()} Organiza · seu espaço de estudos.</p>
+            <div className="flex items-center gap-3">
+              <Link href="/app/revisoes" className="font-semibold text-emerald-800 hover:text-emerald-950">Agenda de revisões</Link>
+              <Link href="/app/materiais" className="font-semibold text-emerald-800 hover:text-emerald-950">Materiais</Link>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </div>
+  );
 }
