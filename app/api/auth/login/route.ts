@@ -18,6 +18,16 @@ export async function POST(request: Request) {
     if (!usuario || !(await bcrypt.compare(input.senha, usuario.senhaHash))) {
       return fail("E-mail ou senha incorretos.", 401);
     }
+    if (!usuario.emailVerificadoEm) {
+      return Response.json(
+        {
+          success: false,
+          message: "Confirme seu e-mail pelo link enviado antes de entrar.",
+          data: { email: usuario.email, confirmationRequired: true },
+        },
+        { status: 403 },
+      );
+    }
     await createSession(usuario.id, input.lembrar);
     return ok({ nome: usuario.nome, email: usuario.email }, "Login realizado.");
   } catch (error) {

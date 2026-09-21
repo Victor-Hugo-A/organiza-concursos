@@ -15,18 +15,21 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   try {
-    if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
-      return fail("O envio de confirmação ainda não foi configurado.", 503);
-    }
     const input = schema.parse(await request.json());
     const email = normalizeEmail(input.email);
     const existente = await prisma.usuario.findUnique({ where: { email } });
-    if (existente?.emailVerificadoEm) return fail("Já existe uma conta confirmada com este e-mail.", 409);
-
+    if (existente)
+      return fail(
+        "Este e-mail já está em uso. Entre na conta ou recupere sua senha.",
+        409,
+      );
+    if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
+      return fail("O envio de confirmação ainda não foi configurado.", 503);
+    }
     const senhaHash = await bcrypt.hash(input.senha, 12);
-    const usuario = existente
-      ? await prisma.usuario.update({ where: { id: existente.id }, data: { nome: input.nome, senhaHash } })
-      : await prisma.usuario.create({ data: { nome: input.nome, email, senhaHash } });
+    const usuario = await prisma.usuario.create({
+      data: { nome: input.nome, email, senhaHash },
+    });
 
     await prisma.tokenVerificacao.deleteMany({ where: { usuarioId: usuario.id } });
     const token = createOpaqueToken();
@@ -41,6 +44,16 @@ export async function POST(request: Request) {
       emailEnviado: delivery.sent
     }, `Conta criada. Enviamos a confirmação para ${usuario.email}.`);
   } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code?: string }).code === "P2002"
+    )
+      return fail(
+        "Este e-mail já está em uso. Entre na conta ou recupere sua senha.",
+        409,
+      );
     return handleApiError(error);
   }
 }

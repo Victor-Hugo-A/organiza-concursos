@@ -46,7 +46,8 @@ export async function getCurrentUser() {
     where: { tokenHash: hashToken(token) },
     include: { usuario: true }
   });
-  if (!sessao || sessao.expiraEm <= new Date()) return null;
+  if (!sessao || sessao.expiraEm <= new Date() || !sessao.usuario.emailVerificadoEm)
+    return null;
   return {
     id: sessao.usuario.id,
     nome: sessao.usuario.nome,
