@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ChangeEvent, FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import {
+  ChangeEvent,
+  FormEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -33,6 +40,7 @@ type Material = {
   planoId: string | null;
   resumo: string | null;
   pontosEstudo: string[];
+  paginas: number | null;
   analiseStatus: string;
   analiseErro: string | null;
   palavrasChave: { id: string; termo: string }[];
@@ -122,39 +130,46 @@ export function MaterialsManager({
     if (selected) setTitle(selected.name.replace(/\.pdf$/i, "").slice(0, 150));
   }
 
-  const analyze = useCallback(async (id: string) => {
-    if (analysisInFlight.current) return;
-    analysisInFlight.current = true;
-    attemptedAnalyses.current.add(id);
-    setAnalyzingId(id);
-    setError("");
-    setMessage("PDF salvo. Lendo o documento e preparando seu resumo…");
-    try {
-      const result = await requestJson(`/api/materials/${id}/analyze`, {
-        method: "POST",
-      });
-      setMessage(result.message);
-    } catch (err) {
-      setMessage("");
-      setError(
-        err instanceof Error
-          ? err.message
-          : "O PDF está salvo, mas não foi possível gerar o resumo.",
-      );
-    } finally {
-      analysisInFlight.current = false;
-      setAnalyzingId("");
-      router.refresh();
-    }
-  }, [router]);
+  const analyze = useCallback(
+    async (id: string) => {
+      if (analysisInFlight.current) return;
+      analysisInFlight.current = true;
+      attemptedAnalyses.current.add(id);
+      setAnalyzingId(id);
+      setError("");
+      setMessage("PDF salvo. Lendo o documento e preparando seu resumo…");
+      try {
+        const result = await requestJson(`/api/materials/${id}/analyze`, {
+          method: "POST",
+        });
+        setMessage(result.message);
+      } catch (err) {
+        setMessage("");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "O PDF está salvo, mas não foi possível gerar o resumo.",
+        );
+      } finally {
+        analysisInFlight.current = false;
+        setAnalyzingId("");
+        router.refresh();
+      }
+    },
+    [router],
+  );
 
   // Analyze pending PDFs one at a time, including files uploaded before local analysis.
   // Failed attempts require an explicit retry to avoid a processing loop.
   useEffect(() => {
     if (!selectedSubject || busy || analysisInFlight.current) return;
-    const next = initialMaterials.find((material) =>
-      material.materiaId === selectedSubject && material.analiseStatus === "PENDENTE" &&
-      !material.resumo && !attemptedAnalyses.current.has(material.id));
+    const next = initialMaterials.find(
+      (material) =>
+        material.materiaId === selectedSubject &&
+        material.analiseStatus === "PENDENTE" &&
+        !material.resumo &&
+        !attemptedAnalyses.current.has(material.id),
+    );
     if (next) void analyze(next.id);
   }, [selectedSubject, initialMaterials, busy, analyze]);
 
@@ -243,7 +258,12 @@ export function MaterialsManager({
   }
 
   async function removeMaterial(id: string, title: string) {
-    if (!window.confirm(`Excluir “${title}”? O PDF, o resumo e as palavras-chave serão removidos.`)) return;
+    if (
+      !window.confirm(
+        `Excluir “${title}”? O PDF, o resumo e as palavras-chave serão removidos.`,
+      )
+    )
+      return;
     setDeletingId(id);
     setError("");
     setMessage("");
@@ -252,7 +272,9 @@ export function MaterialsManager({
       setMessage("PDF excluído.");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível excluir o PDF.");
+      setError(
+        err instanceof Error ? err.message : "Não foi possível excluir o PDF.",
+      );
     } finally {
       setDeletingId("");
     }
@@ -260,7 +282,9 @@ export function MaterialsManager({
 
   return (
     <div className="mx-auto max-w-6xl">
-      <BackLink href={subject ? `/app/materiais?plano=${plan!.id}` : "/app/planos"}>
+      <BackLink
+        href={subject ? `/app/materiais?plano=${plan!.id}` : "/app/planos"}
+      >
         {subject ? "Voltar às matérias" : "Voltar aos meus planos"}
       </BackLink>
       <nav
@@ -496,11 +520,19 @@ export function MaterialsManager({
                     </form>
                     <button
                       type="button"
-                      onClick={() => removeMaterial(material.id, material.titulo)}
+                      onClick={() =>
+                        removeMaterial(material.id, material.titulo)
+                      }
                       disabled={Boolean(deletingId)}
                       className="btn-secondary mt-2 text-rose-700 hover:border-rose-300 hover:bg-rose-50"
                     >
-                      {deletingId === material.id ? "Excluindo…" : <><Trash2 className="h-4 w-4" /> Excluir PDF</>}
+                      {deletingId === material.id ? (
+                        "Excluindo…"
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4" /> Excluir PDF
+                        </>
+                      )}
                     </button>
                   </div>
                 ))}
@@ -532,8 +564,9 @@ export function MaterialsManager({
                   sua próxima revisão.
                 </p>
                 <p className="mt-3 text-xs leading-5 text-stone-500">
-                  PDF de até 4 MB e 200 páginas, com texto selecionável. O resumo é
-                  preparado na própria plataforma, sem envio a serviços de IA.
+                  PDF de até 4 MB e 200 páginas, com texto selecionável. O
+                  resumo é preparado na própria plataforma, sem envio a serviços
+                  de IA.
                 </p>
               </div>
               <div className="grid content-start gap-4">
@@ -631,11 +664,19 @@ export function MaterialsManager({
                       </a>
                       <button
                         type="button"
-                        onClick={() => removeMaterial(material.id, material.titulo)}
+                        onClick={() =>
+                          removeMaterial(material.id, material.titulo)
+                        }
                         disabled={Boolean(deletingId)}
                         className="btn-secondary text-sm text-rose-700 hover:border-rose-300 hover:bg-rose-50"
                       >
-                        {deletingId === material.id ? "Excluindo…" : <><Trash2 className="h-4 w-4" /> Excluir</>}
+                        {deletingId === material.id ? (
+                          "Excluindo…"
+                        ) : (
+                          <>
+                            <Trash2 className="h-4 w-4" /> Excluir
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -643,8 +684,13 @@ export function MaterialsManager({
                     <div className="mt-6 border-t border-stone-100 pt-5">
                       <h4 className="flex items-center gap-2 font-semibold text-emerald-900">
                         <Sparkles className="h-4 w-4" />
-                        Resumo para estudar
+                        Resumo do documento
                       </h4>
+                      {material.paginas && (
+                        <p className="mt-1 text-xs font-medium text-stone-500">
+                          Síntese baseada em {material.paginas} páginas do PDF.
+                        </p>
+                      )}
                       <p className="mt-3 whitespace-pre-line text-sm leading-7 text-stone-700">
                         {material.resumo}
                       </p>
@@ -708,8 +754,9 @@ export function MaterialsManager({
                   )}
                   {material.resumo && (
                     <p className="mt-5 text-xs leading-5 text-stone-500">
-                      Resumo formado por trechos selecionados do PDF, com páginas para consulta.
-                      As palavras-chave indicam temas do documento, sem medir a frequência em provas.
+                      Resumo formado por trechos selecionados do PDF, com
+                      páginas para consulta. As palavras-chave indicam temas do
+                      documento, sem medir a frequência em provas.
                     </p>
                   )}
                 </article>

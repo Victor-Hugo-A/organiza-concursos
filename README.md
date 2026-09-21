@@ -1,64 +1,76 @@
-# Organiza
+<div align="center">
 
-O Organiza é uma plataforma pessoal para preparar estudos de ENEM, PAS, vestibulares e concursos públicos.
+# organiza
 
-## Produto
+### Um espaço pessoal para transformar materiais soltos em um plano de estudo claro.
 
-- Contas com confirmação de e-mail.
-- Recuperação de senha por link seguro e de uso único.
-- Planos separados por objetivo.
-- Matérias dentro de cada plano, com PDFs e slides organizados por assunto.
-- Resumos, pontos de revisão e palavras-chave gerados automaticamente a partir do PDF.
-- Revisões agendadas e visão do progresso.
+<p>ENEM · PAS · vestibulares · concursos públicos</p>
 
-## Rotas principais
+</div>
 
-- `/` — apresentação do produto
-- `/entrar` — acesso à conta
-- `/criar-conta` — criação de conta
-- `/verificar-email` — confirmação de e-mail
-- `/recuperar-senha` — solicitação de recuperação
-- `/redefinir-senha` — criação de uma nova senha
-- `/app` — painel pessoal
-- `/app/materiais` — matérias por plano e organização dos PDFs anteriores
-- `/app/materiais?plano=ID&materia=ID` — PDFs, resumos e palavras-chave da matéria
-- `/app/planos` — objetivos de estudo
-- `/app/revisoes` — revisões planejadas
+---
 
-## Desenvolvimento
+## Por que existe
 
-```powershell
-Copy-Item .env.example .env
-npm install
-npm run dev
+Estudar costuma envolver muitos PDFs, slides, apostilas e assuntos espalhados. O Organiza reúne esse material em um percurso simples: a pessoa escolhe uma prova, separa as matérias e mantém cada PDF com seu resumo, seus pontos de revisão e suas palavras-chave.
+
+```mermaid
+flowchart LR
+    A[Plano de estudo<br/>Ex.: ENEM 2027] --> B[Matéria<br/>Ex.: Português]
+    B --> C[PDF ou slide]
+    C --> D[Resumo por trechos<br/>do documento]
+    D --> E[Palavras-chave<br/>e pontos de revisão]
 ```
 
-Para persistir contas e materiais, configure `DATABASE_URL` com uma base PostgreSQL e execute as migrações Prisma.
+## A experiência da pessoa que estuda
 
-Para enviar confirmações e recuperações por e-mail na Vercel, configure:
+| Momento                | O que acontece                                                                                     |
+| ---------------------- | -------------------------------------------------------------------------------------------------- |
+| **Criar um plano**     | A pessoa dá um nome ao objetivo, como “Concurso Banco do Brasil”.                                  |
+| **Organizar matérias** | Cada assunto fica dentro do plano: Português, Matemática, Direito e assim por diante.              |
+| **Adicionar um PDF**   | O documento entra diretamente na matéria certa.                                                    |
+| **Retomar o conteúdo** | A plataforma apresenta uma síntese de leitura, páginas de referência, temas e pontos para revisar. |
 
-```env
-RESEND_API_KEY=re_...
-EMAIL_FROM=Organiza <contato@seu-dominio.com>
-```
+## O que a plataforma oferece
 
-O remetente deve usar um domínio validado no Resend. O envio por e-mail precisa estar configurado também no localhost; links de recuperação não são exibidos na tela.
+| Área         | Recursos                                                               |
+| ------------ | ---------------------------------------------------------------------- |
+| **Conta**    | Cadastro, confirmação de e-mail, login e recuperação de senha.         |
+| **Planos**   | Organização separada para cada prova ou objetivo.                      |
+| **Matérias** | Biblioteca por assunto, sem misturar materiais de áreas diferentes.    |
+| **PDFs**     | Upload, abertura do arquivo, resumo, palavras-chave e exclusão segura. |
+| **Revisões** | Espaço preparado para acompanhar os próximos retornos ao conteúdo.     |
 
-## Resumos de PDFs
+## Resumo do PDF, sem custo de IA
 
-No `.env` local, preencha `OPENAI_API_KEY` com uma chave da API OpenAI e mantenha `OPENAI_MODEL=gpt-4.1-mini` (ou outro modelo compatível com PDFs e Structured Outputs). Na hospedagem, configure as mesmas variáveis no ambiente do servidor. A chave nunca é enviada ao navegador. O uso da API requer créditos e gera cobrança na conta OpenAI.
+O resumo é gerado no próprio servidor. A plataforma extrai o texto selecionável do PDF, ignora cabeçalhos repetidos, avisos de licença e enunciados de questões, e percorre diferentes partes do documento para evitar um resumo concentrado apenas no começo.
 
-Antes de usar as novas telas, aplique a migração aditiva e gere o cliente Prisma:
+Cada trecho exibido aponta a página de onde foi retirado. As palavras-chave representam temas presentes no material; elas não afirmam frequência de cobrança em provas anteriores.
 
-```powershell
-npm.cmd run prisma:deploy
-npm.cmd run prisma:generate
-```
+> PDFs digitalizados como imagem não possuem texto selecionável. Para esse caso, o arquivo precisa passar por OCR antes de ser adicionado.
 
-Fluxo: criar plano → criar matéria → adicionar PDF. O arquivo é salvo primeiro; em seguida, a tela solicita a análise ao servidor. O servidor envia o PDF à Responses API com `store: false` e salva o resumo, os pontos de estudo e as palavras-chave no Neon. A saída usa JSON Schema e validação local. Documentação: [arquivos PDF](https://developers.openai.com/api/docs/guides/file-inputs) e [saídas estruturadas](https://developers.openai.com/api/docs/guides/structured-outputs).
+## Organização e segurança
 
-Sem chave ou em caso de falha, o arquivo continua disponível e a tela informa que o resumo está pendente. O botão de tentar novamente reaproveita o arquivo salvo. Ao abrir uma matéria com o serviço configurado, PDFs pendentes iniciam a análise automaticamente, um por vez. Isso também vale para arquivos enviados antes de configurar a chave. Falhas exigem uma nova tentativa pelo botão, sem repetição automática de chamadas. Análises simultâneas do mesmo PDF são bloqueadas; uma execução interrompida pode ser retomada após 150 segundos. Não há processamento em fila independente do navegador.
+- Cada conta visualiza somente os próprios planos e materiais.
+- O PDF sempre pertence a uma matéria e a um plano.
+- A exclusão remove o PDF, o resumo, as palavras-chave e os registros de revisão vinculados.
+- O e-mail é confirmado na criação da conta; a recuperação de senha usa links de uso único.
 
-Os conceitos são sugestões baseadas no documento e no objetivo do plano. A plataforma não possui um banco de provas para calcular frequência real de cobrança. Confira sempre o PDF original.
+## Limites atuais
 
-Limite de upload: 4 MB por PDF. No localhost, os arquivos são gravados em `public/uploads`. Na Vercel, configure `BLOB_READ_WRITE_TOKEN` para persistência; o upload é recusado sem essa configuração. O armazenamento atual usa URLs públicas, portanto não é adequado para documentos confidenciais. O endpoint de análise exige sessão e confere a propriedade do material e da matéria. O tempo máximo configurado para análise é 120 segundos; a hospedagem precisa permitir essa duração.
+| Item       | Regra                                                                       |
+| ---------- | --------------------------------------------------------------------------- |
+| Arquivo    | PDF de até 4 MB                                                             |
+| Documento  | Até 200 páginas por análise                                                 |
+| Texto      | PDF com texto selecionável                                                  |
+| Hospedagem | Em produção, os arquivos usam o armazenamento configurado para a plataforma |
+
+## Tecnologia
+
+Construído com Next.js, TypeScript, Prisma e PostgreSQL. A leitura do PDF usa PDF.js e funciona localmente, sem chave de API ou cobrança por documento.
+
+---
+
+<div align="center">
+  <sub>organiza · estudar com mais clareza, um material por vez.</sub>
+</div>

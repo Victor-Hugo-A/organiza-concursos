@@ -37,6 +37,7 @@ export default async function MaterialsPage({
         planoId: true,
         resumo: true,
         pontosEstudo: true,
+        paginas: true,
         analiseStatus: true,
         analiseErro: true,
         palavrasChave: { select: { id: true, termo: true } },
