@@ -5,12 +5,15 @@ import { createOpaqueToken, hashToken } from "@/lib/auth";
 import { sendVerificationEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { normalizeEmail } from "@/lib/strings";
+import { passwordError } from "@/lib/password-rules";
 import { created, fail, handleApiError } from "@/lib/api-response";
 
 const schema = z.object({
   nome: z.string().trim().min(2).max(80),
   email: z.string().email(),
-  senha: z.string().min(8).max(72)
+  senha: z.string().min(8).max(72).refine((value) => !passwordError(value), {
+    message: "Escolha uma senha mais segura.",
+  })
 });
 
 export async function POST(request: Request) {

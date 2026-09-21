@@ -8,7 +8,7 @@ export function AppFooter() {
   const pathname = usePathname();
   if (pathname.startsWith("/app")) return null;
 
-  if (pathname === "/entrar" || pathname === "/criar-conta") {
+  if (["/entrar", "/criar-conta", "/recuperar-senha", "/redefinir-senha"].includes(pathname)) {
     return (
       <footer className="border-t border-stone-200 bg-white px-5 py-3 text-xs text-stone-500">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
@@ -26,7 +26,7 @@ export function AppFooter() {
           <div className="flex items-center gap-3">
             <BrandMark size="sm" />
             <div>
-              <p className="font-bold text-stone-950">organiza</p>
+              <p className="font-bold text-stone-950">Organiza</p>
               <p className="text-xs text-stone-500">Seu espaço de estudos</p>
             </div>
           </div>

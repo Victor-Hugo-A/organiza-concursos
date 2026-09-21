@@ -4,6 +4,8 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Eye, EyeOff, Loader2, LockKeyhole, Mail, UserRound } from "lucide-react";
+import { passwordError } from "@/lib/password-rules";
+import { useToast } from "@/components/toast-provider";
 
 type ApiResult = {
   success: boolean;
@@ -13,6 +15,7 @@ type ApiResult = {
 
 export function LoginForm({ verified = false, passwordReset = false }: { verified?: boolean; passwordReset?: boolean }) {
   const router = useRouter();
+  const { notify } = useToast();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -41,6 +44,7 @@ export function LoginForm({ verified = false, passwordReset = false }: { verifie
           setUnverifiedEmail(result.data.email ?? email);
         return;
       }
+      notify("success", "Login realizado. Bem-vindo ao Organiza.");
       router.push("/app");
       router.refresh();
     } catch {
@@ -91,6 +95,12 @@ export function RegisterForm() {
     setPending(true);
     setError("");
     const form = new FormData(event.currentTarget);
+    const passwordMessage = passwordError(String(form.get("senha") ?? ""));
+    if (passwordMessage) {
+      setError(passwordMessage);
+      setPending(false);
+      return;
+    }
     try {
       const response = await fetch("/api/auth/register", {
         method: "POST",
@@ -113,6 +123,7 @@ export function RegisterForm() {
 
   return <form className="mt-5 grid gap-3" onSubmit={submit}>
     {error && <p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm font-semibold text-rose-700">{error}</p>}
+    <p className="rounded-xl bg-stone-50 p-3 text-xs leading-5 text-stone-600">Use ao menos 8 caracteres. Evite repetições como “qqqqqqq” e sequências como “123456” ou “abcd”.</p>
     <label>Como podemos te chamar?<div className="relative mt-1.5"><UserRound className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-stone-400" /><input name="nome" required minLength={2} className="pl-10" placeholder="Seu nome" autoComplete="name" /></div></label>
     <label>Seu e-mail<div className="relative mt-1.5"><Mail className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-stone-400" /><input name="email" required className="pl-10" type="email" placeholder="voce@email.com" autoComplete="email" /></div></label>
     <label>Crie uma senha<div className="relative mt-1.5"><LockKeyhole className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-stone-400" /><input name="senha" required minLength={8} maxLength={72} className="pl-10" type="password" placeholder="Pelo menos 8 caracteres" autoComplete="new-password" /></div></label>

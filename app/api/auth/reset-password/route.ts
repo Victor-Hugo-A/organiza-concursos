@@ -3,10 +3,13 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hashToken } from "@/lib/auth";
 import { fail, handleApiError, ok } from "@/lib/api-response";
+import { passwordError } from "@/lib/password-rules";
 
 const schema = z.object({
   token: z.string().min(20),
-  senha: z.string().min(8).max(72)
+  senha: z.string().min(8).max(72).refine((value) => !passwordError(value), {
+    message: "Escolha uma senha mais segura.",
+  })
 });
 
 export async function POST(request: Request) {
