@@ -12,7 +12,7 @@ export default async function LoginPage({
 }) {
   const params = await searchParams;
   return (
-    <main className="relative grid min-h-[calc(100svh-73px)] place-items-center overflow-hidden px-5 py-6 lg:py-8">
+    <main className="relative grid min-h-0 flex-1 place-items-center overflow-hidden px-5 py-4 lg:py-6">
       <div className="absolute -left-28 top-20 -z-10 h-80 w-80 rounded-full bg-emerald-100 blur-3xl" />
       <div className="grid w-full max-w-4xl overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-[0_20px_60px_rgba(43,61,49,0.11)] lg:grid-cols-[0.9fr_1.1fr]">
         <section className="hidden bg-emerald-900 p-8 text-white lg:flex lg:flex-col">

@@ -84,7 +84,7 @@ export function RegisterForm() {
     }
   }
 
-  return <form className="mt-7 grid gap-4" onSubmit={submit}>
+  return <form className="mt-5 grid gap-3" onSubmit={submit}>
     {error && <p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm font-semibold text-rose-700">{error}</p>}
     <label>Como podemos te chamar?<div className="relative mt-1.5"><UserRound className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-stone-400" /><input name="nome" required minLength={2} className="pl-10" placeholder="Seu nome" autoComplete="name" /></div></label>
     <label>Seu e-mail<div className="relative mt-1.5"><Mail className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-stone-400" /><input name="email" required className="pl-10" type="email" placeholder="voce@email.com" autoComplete="email" /></div></label>
