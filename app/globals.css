@@ -3,6 +3,8 @@
 @tailwind utilities;
 
 :root { color-scheme: light; }
+@keyframes toast-progress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.toast-progress { animation: toast-progress 4s linear forwards; transform-origin: left; }
 * { box-sizing: border-box; }
 body { min-height: 100vh; background: radial-gradient(circle at 9% 0%, rgba(194, 234, 215, 0.48), transparent 24rem), #f8faf9; color: #17201c; }
 input, select, textarea { @apply w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm text-stone-950 outline-none transition placeholder:text-stone-400 focus:border-emerald-700 focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-500; }

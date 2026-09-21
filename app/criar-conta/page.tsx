@@ -12,7 +12,7 @@ export default function RegisterPage() {
         <section className="p-6 sm:p-8">
           <Link href="/" className="flex items-center gap-3">
             <BrandMark size="sm" />
-            <span className="font-bold text-stone-950">organiza</span>
+            <span className="font-bold text-stone-950">Organiza</span>
           </Link>
           <div className="mt-6">
             <p className="text-sm font-semibold text-emerald-800">Comece do seu jeito</p>

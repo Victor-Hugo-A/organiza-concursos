@@ -20,6 +20,7 @@ import {
 import clsx from "clsx";
 import { BrandMark } from "@/components/brand-mark";
 import { BackLink } from "@/components/back-link";
+import { useToast } from "@/components/toast-provider";
 
 const items = [
   { href: "/app", label: "Visão geral", icon: LayoutDashboard },
@@ -52,6 +53,7 @@ export function StudyShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { notify } = useToast();
   const [accountOpen, setAccountOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
@@ -65,6 +67,7 @@ export function StudyShell({
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
+    notify("success", "Você saiu da sua conta com segurança.");
     router.push("/entrar");
     router.refresh();
   }
@@ -77,7 +80,7 @@ export function StudyShell({
             <Link href="/app" className={clsx("flex min-w-0 items-center gap-3", !sidebarExpanded && "lg:justify-center") }>
               <BrandMark size="sm" />
               <div className={clsx(!sidebarExpanded && "lg:hidden")}>
-                <p className="font-bold tracking-tight text-stone-950">organiza</p>
+                <p className="font-bold tracking-tight text-stone-950">Organiza</p>
                 <p className="text-xs text-stone-500">meu espaço de estudos</p>
               </div>
             </Link>

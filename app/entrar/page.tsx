@@ -18,7 +18,7 @@ export default async function LoginPage({
         <section className="hidden bg-emerald-900 p-8 text-white lg:flex lg:flex-col">
           <Link href="/" className="flex items-center gap-3">
             <BrandMark size="sm" />
-            <span className="font-bold">organiza</span>
+            <span className="font-bold">Organiza</span>
           </Link>
           <div className="my-auto">
             <p className="text-xs font-bold uppercase tracking-[0.17em] text-emerald-300">Seu lugar de estudo</p>
@@ -33,7 +33,7 @@ export default async function LoginPage({
           <div className="lg:hidden">
             <Link href="/" className="flex items-center gap-3">
               <BrandMark size="sm" />
-              <span className="font-bold text-stone-950">organiza</span>
+              <span className="font-bold text-stone-950">Organiza</span>
             </Link>
           </div>
           <div className="mt-6 lg:mt-0">

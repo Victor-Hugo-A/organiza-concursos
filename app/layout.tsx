@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AppFooter } from "@/components/app-footer";
 import { PublicHeader } from "@/components/public-header";
+import { ToastProvider } from "@/components/toast-provider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://organizaseusestudos.example"),
@@ -22,9 +23,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
-        <PublicHeader />
-        <div className="flex min-h-0 flex-1 flex-col">{children}</div>
-        <AppFooter />
+        <ToastProvider>
+          <PublicHeader />
+          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+          <AppFooter />
+        </ToastProvider>
       </body>
     </html>
   );
