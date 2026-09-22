@@ -30,7 +30,7 @@ export function AppFooter() {
               <p className="text-xs text-stone-500">Seu espaço de estudos</p>
             </div>
           </div>
-          <p className="mt-4 max-w-sm leading-6">Um lugar calmo para transformar materiais soltos em um estudo que faz sentido.</p>
+          <p className="mt-4 max-w-sm leading-6">Envie PDFs, transforme-os em resumos e retome os pontos certos na hora da revisão.</p>
           <p className="mt-3 text-xs text-stone-500">© {new Date().getFullYear()} Organiza. Feito para o seu ritmo.</p>
         </div>
         <nav className="grid content-start gap-2">
