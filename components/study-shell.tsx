@@ -73,10 +73,10 @@ export function StudyShell({
 
   return (
     <div className="min-h-screen bg-[#f6f8f6]">
-      <aside className={clsx("border-b border-stone-200 bg-white transition-[width] duration-200 lg:fixed lg:inset-y-0 lg:border-b-0 lg:border-r", sidebarExpanded ? "lg:w-[17rem]" : "lg:w-[5.5rem]")}>
-        <div className="flex h-full flex-col px-4 py-4 lg:px-5 lg:py-6">
-          <div className={clsx("flex items-center justify-between gap-3", !sidebarExpanded && "lg:flex-col lg:justify-start")}>
-            <Link href="/app" className={clsx("flex min-w-0 items-center gap-3", !sidebarExpanded && "lg:justify-center") }>
+      <aside className={clsx("border-b border-stone-200 bg-white transition-[width] duration-200 lg:fixed lg:inset-y-0 lg:border-b-0 lg:border-r", sidebarExpanded ? "lg:w-[17rem]" : "lg:w-28")}>
+        <div className={clsx("flex h-full flex-col px-4 py-4 lg:py-6", sidebarExpanded ? "lg:px-5" : "lg:px-4")}>
+          <div className={clsx("flex items-center justify-between gap-3", !sidebarExpanded && "lg:gap-2")}>
+            <Link href="/app" className={clsx("flex min-w-0 items-center gap-3", !sidebarExpanded && "lg:shrink-0 lg:justify-center") }>
               <BrandMark size="sm" />
               <div className={clsx(!sidebarExpanded && "lg:hidden")}>
                 <p className="font-bold tracking-tight text-stone-950">Organiza</p>
@@ -106,7 +106,7 @@ export function StudyShell({
                   href={href}
                   title={label}
                   className={clsx(
-                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition",
                     !sidebarExpanded && "justify-center px-2",
                     active
                       ? "bg-emerald-50 text-emerald-950 shadow-sm ring-1 ring-emerald-100"
@@ -162,7 +162,7 @@ export function StudyShell({
         </div>
       </aside>
 
-      <div className={clsx("flex min-h-screen min-w-0 flex-col transition-[padding] duration-200", sidebarExpanded ? "lg:pl-[17rem]" : "lg:pl-[5.5rem]")}>
+      <div className={clsx("flex min-h-screen min-w-0 flex-col transition-[padding] duration-200", sidebarExpanded ? "lg:pl-[17rem]" : "lg:pl-28")}>
         <header className="sticky top-0 z-20 border-b border-stone-200/90 bg-white/90 px-5 py-3 backdrop-blur lg:px-10">
           <div className="flex w-full items-center justify-between gap-4">
             <div className="min-w-0">
@@ -214,7 +214,7 @@ export function StudyShell({
           </div>
         </header>
 
-        <main className="flex-1 px-5 py-7 lg:px-10 lg:py-9">
+        <main className="flex-1 px-5 py-6 lg:px-10 lg:py-7">
           {pathname !== "/app" && pathname !== "/app/materiais" && (
             <div className="mx-auto mb-5 max-w-6xl">
               <BackLink href="/app">Voltar à visão geral</BackLink>
@@ -223,7 +223,7 @@ export function StudyShell({
           {children}
         </main>
 
-        <footer className="border-t border-stone-200 bg-white px-5 py-4 lg:px-10">
+        <footer className="border-t border-stone-200 bg-white px-5 py-3 lg:px-10">
           <div className="flex w-full flex-col justify-between gap-2 text-xs text-stone-500 sm:flex-row sm:items-center">
             <p>© {new Date().getFullYear()} Organiza · seu espaço de estudos.</p>
             <div className="flex items-center gap-3">
