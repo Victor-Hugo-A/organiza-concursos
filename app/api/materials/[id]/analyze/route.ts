@@ -69,8 +69,17 @@ export async function POST(
           })),
           skipDuplicates: true,
         });
+        const pendingReviews = await tx.revisao.findMany({
+          where: { status: "PENDENTE", material: { usuarioId: user.id } },
+          select: { materialId: true, agendadaPara: true },
+        });
         await tx.revisao.createMany({
-          data: buildReviewSchedule(material.id, material.titulo),
+          data: buildReviewSchedule(
+            material.id,
+            material.titulo,
+            started,
+            pendingReviews,
+          ),
         });
       });
       return ok(null, "Resumo e palavras-chave prontos para estudar.");

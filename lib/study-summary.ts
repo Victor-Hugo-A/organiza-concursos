@@ -346,7 +346,6 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
   }
   selected.sort((a, b) => a.page - b.page || a.index - b.index);
   if (!selected.length || !keywords.length) return null;
-  const ocrPages = pages.filter((page) => page.source === "ocr").length;
   const partial =
     readablePages < pages.length
       ? `Resumo apenas das ${readablePages} de ${pages.length} páginas com texto extraível. Páginas sem texto podem conter imagens ou digitalizações e não estão incluídas.\n\n`
@@ -372,12 +371,8 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
     usedEvidence.add(evidence.index);
     if (reviewPoints.length >= 10) break;
   }
-  const ocrNotice =
-    ocrPages > 0
-      ? `${ocrPages} ${ocrPages === 1 ? "página foi lida" : "páginas foram lidas"} por OCR local.\n\n`
-      : "";
   return {
-    resumo: `Síntese de leitura — ${readablePages} de ${pages.length} páginas com conteúdo lido.\n\n${ocrNotice}${partial}${notes.join("\n\n")}`,
+    resumo: `Síntese de leitura — ${readablePages} de ${pages.length} páginas com conteúdo lido.\n\n${partial}${notes.join("\n\n")}`,
     pontosEstudo: reviewPoints,
     palavrasChave: keywords,
     paginas: pages.length,

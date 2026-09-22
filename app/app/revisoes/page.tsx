@@ -107,7 +107,7 @@ export default async function ReviewsPage() {
             <CalendarCheck2 className="mx-auto h-7 w-7 text-stone-400" />
             <h3 className="mt-3 text-lg font-semibold text-stone-950">Nenhuma revisão pendente</h3>
             <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-stone-600">
-              Se você já possui resumos prontos, prepare a agenda para criar os três retornos de cada material. Novos resumos entram na agenda automaticamente.
+              Se você já possui resumos prontos, prepare a agenda para distribuir os retornos, com no máximo dois materiais por dia. Novos resumos seguem o mesmo limite automaticamente.
             </p>
             <PrepareReviewsButton />
           </div>

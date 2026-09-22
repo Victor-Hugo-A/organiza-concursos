@@ -152,7 +152,7 @@ export function StudyShell({
               <ChevronDown className={clsx("h-4 w-4 shrink-0 text-stone-400", !sidebarExpanded && "lg:hidden")} />
             </button>
             {accountOpen && (
-              <div className={clsx("absolute bottom-full z-30 mb-2 w-full rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg", !sidebarExpanded && "w-48")}>
+              <div className={clsx("absolute z-30 rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg", sidebarExpanded ? "bottom-full mb-2 w-full" : "bottom-0 left-full ml-3 w-52")}>
                 <button type="button" onClick={logout} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
                   <LogOut className="h-4 w-4" /> Sair da conta
                 </button>

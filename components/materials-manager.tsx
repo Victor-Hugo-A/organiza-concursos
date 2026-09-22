@@ -46,6 +46,12 @@ type Material = {
   palavrasChave: { id: string; termo: string }[];
 };
 
+function studySummary(value: string) {
+  return value
+    .replace(/\d+\s+páginas?\s+fo(?:i|ram)\s+lidas?\s+por OCR local\.\s*/gi, "")
+    .trim();
+}
+
 async function requestJson(url: string, options: RequestInit) {
   let response: Response;
   try {
@@ -567,7 +573,7 @@ export function MaterialsManager({
                 </p>
                 <p className="mt-3 text-xs leading-5 text-stone-500">
                   PDF de até 4 MB e 800 páginas. Slides e documentos
-                  digitalizados também são lidos por OCR local. O resumo é
+                  digitalizados também podem ser lidos. O resumo é
                   preparado na própria plataforma, sem envio do seu PDF a serviços de IA.
                 </p>
               </div>
@@ -694,7 +700,7 @@ export function MaterialsManager({
                         </p>
                       )}
                       <p className="mt-3 whitespace-pre-line text-sm leading-7 text-stone-700">
-                        {material.resumo}
+                        {studySummary(material.resumo)}
                       </p>
                       {material.pontosEstudo.length > 0 && (
                         <>
