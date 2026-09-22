@@ -282,34 +282,36 @@ export function MaterialsManager({
 
   return (
     <div className="mx-auto max-w-6xl">
-      <BackLink
-        href={subject ? `/app/materiais?plano=${plan!.id}` : "/app/planos"}
-      >
-        {subject ? "Voltar às matérias" : "Voltar aos meus planos"}
-      </BackLink>
-      <nav
-        aria-label="Caminho de estudo"
-        className="mb-5 flex flex-wrap items-center gap-2 text-sm text-stone-500"
-      >
-        <Link href="/app/planos" className="hover:text-emerald-800">
-          Meus planos
-        </Link>
-        <span>/</span>
-        <Link
-          href={plan ? `/app/materiais?plano=${plan.id}` : "/app/materiais"}
-          className="hover:text-emerald-800"
+      <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <BackLink
+          href={subject ? `/app/materiais?plano=${plan!.id}` : "/app/planos"}
         >
-          {plan?.titulo ?? "Matérias"}
-        </Link>
-        {subject && (
-          <>
-            <span>/</span>
-            <span className="font-semibold text-emerald-800">
-              {subject.titulo}
-            </span>
-          </>
-        )}
-      </nav>
+          {subject ? "Voltar às matérias" : "Voltar aos meus planos"}
+        </BackLink>
+        <nav
+          aria-label="Caminho de estudo"
+          className="flex flex-wrap items-center gap-2 text-sm text-stone-500"
+        >
+          <Link href="/app/planos" className="hover:text-emerald-800">
+            Meus planos
+          </Link>
+          <span>/</span>
+          <Link
+            href={plan ? `/app/materiais?plano=${plan.id}` : "/app/materiais"}
+            className="hover:text-emerald-800"
+          >
+            {plan?.titulo ?? "Matérias"}
+          </Link>
+          {subject && (
+            <>
+              <span>/</span>
+              <span className="font-semibold text-emerald-800">
+                {subject.titulo}
+              </span>
+            </>
+          )}
+        </nav>
+      </div>
       <p className="text-sm font-semibold text-emerald-800">
         {subject ? "Um assunto de cada vez" : "Seu estudo, no lugar certo"}
       </p>

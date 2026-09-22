@@ -12,8 +12,7 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
-  PanelLeftClose,
-  PanelLeftOpen,
+  Menu,
   Plus,
   Target,
 } from "lucide-react";
@@ -67,7 +66,7 @@ export function StudyShell({
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    notify("success", "Você saiu da sua conta com segurança.");
+    notify("warning", "Você saiu da sua conta com segurança.");
     router.push("/entrar");
     router.refresh();
   }
@@ -76,7 +75,7 @@ export function StudyShell({
     <div className="min-h-screen bg-[#f6f8f6]">
       <aside className={clsx("border-b border-stone-200 bg-white transition-[width] duration-200 lg:fixed lg:inset-y-0 lg:border-b-0 lg:border-r", sidebarExpanded ? "lg:w-[17rem]" : "lg:w-[5.5rem]")}>
         <div className="flex h-full flex-col px-4 py-4 lg:px-5 lg:py-6">
-          <div className="flex items-center justify-between gap-3">
+          <div className={clsx("flex items-center justify-between gap-3", !sidebarExpanded && "lg:flex-col lg:justify-start")}>
             <Link href="/app" className={clsx("flex min-w-0 items-center gap-3", !sidebarExpanded && "lg:justify-center") }>
               <BrandMark size="sm" />
               <div className={clsx(!sidebarExpanded && "lg:hidden")}>
@@ -84,6 +83,15 @@ export function StudyShell({
                 <p className="text-xs text-stone-500">meu espaço de estudos</p>
               </div>
             </Link>
+            <button
+              type="button"
+              onClick={() => setSidebarExpanded((value) => !value)}
+              aria-label={sidebarExpanded ? "Recolher menu lateral" : "Abrir menu lateral"}
+              title={sidebarExpanded ? "Recolher menu lateral" : "Abrir menu lateral"}
+              className={clsx("hidden h-9 w-9 shrink-0 place-items-center rounded-lg border transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 lg:grid", sidebarExpanded ? "border-stone-200 bg-white text-stone-600" : "border-emerald-300 bg-emerald-50 text-emerald-800")}
+            >
+              <Menu className="h-[18px] w-[18px]" />
+            </button>
             <Link href="/app/materiais" className="btn-primary px-3 py-2 lg:hidden">
               <Plus className="h-4 w-4" /> Material
             </Link>
@@ -158,16 +166,9 @@ export function StudyShell({
         <header className="sticky top-0 z-20 border-b border-stone-200/90 bg-white/90 px-5 py-3 backdrop-blur lg:px-10">
           <div className="flex w-full items-center justify-between gap-4">
             <div className="min-w-0">
-              <div className="hidden items-center gap-3 lg:flex">
-                <button
-                  type="button"
-                  onClick={() => setSidebarExpanded((value) => !value)}
-                  aria-label={sidebarExpanded ? "Fechar menu lateral" : "Abrir menu lateral"}
-                  className="grid h-10 w-10 place-items-center rounded-xl border border-stone-200 bg-white text-stone-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800"
-                >
-                  {sidebarExpanded ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
-                </button>
-                <div><div className="text-xs font-medium text-stone-500">Área de estudos</div><p className="truncate text-base font-semibold text-stone-950">{pageTitle}</p></div>
+              <div className="hidden lg:block">
+                <div className="text-xs font-medium text-stone-500">Área de estudos</div>
+                <p className="truncate text-base font-semibold text-stone-950">{pageTitle}</p>
               </div>
               <nav className="flex gap-4 overflow-x-auto lg:hidden" aria-label="Navegação principal">
                 {items.map(({ href, label }) => (
@@ -215,7 +216,7 @@ export function StudyShell({
 
         <main className="flex-1 px-5 py-7 lg:px-10 lg:py-9">
           {pathname !== "/app" && pathname !== "/app/materiais" && (
-            <div className="mx-auto max-w-6xl">
+            <div className="mx-auto mb-5 max-w-6xl">
               <BackLink href="/app">Voltar à visão geral</BackLink>
             </div>
           )}
