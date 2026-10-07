@@ -8,7 +8,7 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:pdf": "tsx --test tests/pdf-analysis.test.ts",
     "format": "prettier --write .",

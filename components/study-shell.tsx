@@ -65,10 +65,15 @@ export function StudyShell({
   const pageTitle = titles[pathname] ?? "Organiza";
 
   async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" });
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (!response.ok) throw new Error("Logout failed");
     notify("warning", "Você saiu da sua conta com segurança.");
     router.push("/entrar");
-    router.refresh();
+      router.refresh();
+    } catch {
+      notify("error", "NÃ£o foi possÃ­vel sair da conta. Tente novamente.");
+    }
   }
 
   return (
@@ -170,9 +175,9 @@ export function StudyShell({
                 <div className="text-xs font-medium text-stone-500">Área de estudos</div>
                 <p className="truncate text-base font-semibold text-stone-950">{pageTitle}</p>
               </div>
-              <nav className="flex gap-4 overflow-x-auto lg:hidden" aria-label="Navegação principal">
+              <nav className="flex flex-wrap gap-x-3 gap-y-1 lg:hidden" aria-label="Navegação principal">
                 {items.map(({ href, label }) => (
-                  <Link key={href} href={href} className={clsx("whitespace-nowrap py-1 text-sm font-semibold", pathname === href ? "text-emerald-800" : "text-stone-500")}>
+                  <Link key={href} href={href} className={clsx("whitespace-nowrap py-1 text-xs font-semibold sm:text-sm", pathname === href ? "text-emerald-800" : "text-stone-500")}>
                     {label}
                   </Link>
                 ))}
@@ -192,7 +197,7 @@ export function StudyShell({
                   {notifications.dueToday > 0 && <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white">{notifications.dueToday > 9 ? "9+" : notifications.dueToday}</span>}
                 </button>
                 {notificationsOpen && (
-                  <div className="absolute right-0 z-30 mt-2 w-80 rounded-2xl border border-stone-200 bg-white p-4 shadow-xl">
+                  <div className="absolute right-0 z-30 mt-2 w-[min(20rem,calc(100vw-2.5rem))] rounded-2xl border border-stone-200 bg-white p-4 shadow-xl">
                     <div className="flex items-center justify-between gap-3">
                       <p className="font-semibold text-stone-950">Lembretes de revisão</p>
                       {notifications.dueToday > 0 && <span className="badge">{notifications.dueToday} hoje</span>}

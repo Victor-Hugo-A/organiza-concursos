@@ -43,7 +43,7 @@ export default function HomePage() {
               <Sparkles className="h-3.5 w-3.5" />
               do PDF à revisão
             </div>
-            <h1 className="mt-6 max-w-3xl text-5xl font-semibold leading-[1.04] tracking-[-0.055em] text-stone-950 sm:text-6xl lg:text-7xl">
+            <h1 className="mt-6 max-w-3xl text-4xl font-semibold leading-[1.04] tracking-[-0.055em] text-stone-950 sm:text-6xl lg:text-7xl">
               Transforme cada PDF em <span className="home-word-rotator" aria-label="um resumo claro, palavras-chave, pontos de revisão e uma rotina possível"><span aria-hidden="true">um resumo claro</span><span aria-hidden="true">palavras-chave</span><span aria-hidden="true">pontos de revisão</span><span aria-hidden="true">uma rotina possível</span></span>.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-600">

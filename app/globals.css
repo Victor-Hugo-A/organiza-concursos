@@ -25,9 +25,10 @@ label { @apply text-sm font-semibold text-stone-800; }
 .home-float-two { animation: home-float-two 5.6s ease-in-out infinite .45s; }
 .home-float-three { animation: home-float-three 5.1s ease-in-out infinite .9s; }
 .home-scan { animation: home-scan 3.8s ease-in-out infinite; }
-.home-word-rotator { display: inline-grid; min-width: 15ch; color: #166534; text-decoration: underline; text-decoration-color: #bbf7d0; text-decoration-thickness: .12em; text-underline-offset: .12em; vertical-align: bottom; }
+.home-word-rotator { display: inline-grid; min-width: min(15ch, 100%); color: #166534; text-decoration: underline; text-decoration-color: #bbf7d0; text-decoration-thickness: .12em; text-underline-offset: .12em; vertical-align: bottom; }
 .home-word-rotator > span { grid-area: 1 / 1; animation: home-word-cycle 12s ease-in-out infinite; }
 .home-word-rotator > span:nth-child(2) { animation-delay: -3s; }
 .home-word-rotator > span:nth-child(3) { animation-delay: -6s; }
 .home-word-rotator > span:nth-child(4) { animation-delay: -9s; }
 @media (prefers-reduced-motion: reduce) { .home-float-one, .home-float-two, .home-float-three, .home-scan, .home-word-rotator > span { animation: none; } .home-word-rotator > span:not(:first-child) { display: none; } }
+@media (max-width: 639px) { .home-word-rotator { display: grid; min-width: 0; width: 100%; } }
