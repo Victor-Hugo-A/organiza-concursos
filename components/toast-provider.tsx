@@ -1,9 +1,9 @@
 "use client";
 
 import { createContext, useContext, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, CircleAlert, Info, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleAlert, Info, Trash2, X } from "lucide-react";
 
-type Toast = { id: number; type: "success" | "error" | "info" | "warning"; message: string };
+type Toast = { id: number; type: "success" | "error" | "info" | "warning" | "destructive"; message: string };
 type ToastContextType = { notify: (type: Toast["type"], message: string) => void };
 const ToastContext = createContext<ToastContextType | null>(null);
 
@@ -12,6 +12,7 @@ const toastStyles = {
   info: { border: "border-sky-100", icon: "text-sky-700", progress: "bg-sky-600", Icon: Info },
   warning: { border: "border-amber-200", icon: "text-amber-700", progress: "bg-amber-500", Icon: AlertTriangle },
   error: { border: "border-rose-200", icon: "text-rose-700", progress: "bg-rose-600", Icon: CircleAlert },
+  destructive: { border: "border-rose-200", icon: "text-rose-700", progress: "bg-rose-600", Icon: Trash2 },
 };
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {

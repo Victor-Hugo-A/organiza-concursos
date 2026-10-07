@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { BookText, Link2, Loader2, NotebookPen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { StudyTopic } from "@/components/topic-manager";
+import { useToast } from "@/components/toast-provider";
 
 type LibraryMaterialType = "TEXTO" | "ANOTACAO" | "LINK";
 
@@ -26,38 +27,48 @@ export function LibraryMaterialCreator({
   topics: StudyTopic[];
 }) {
   const router = useRouter();
+  const { notify } = useToast();
   const [type, setType] = useState<LibraryMaterialType>("TEXTO");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setPending(true);
     setError("");
-    const form = new FormData(event.currentTarget);
-    const response = await fetch("/api/materials/library", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        materiaId,
-        topicoId: form.get("topicoId") || null,
-        titulo: form.get("titulo"),
-        tipo: type,
-        conteudo: form.get("conteudo"),
-        urlExterna: form.get("urlExterna"),
-      }),
-    }).catch(() => null);
+    const form = new FormData(formElement);
+    try {
+      const response = await fetch("/api/materials/library", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          materiaId,
+          topicoId: form.get("topicoId") || null,
+          titulo: form.get("titulo"),
+          tipo: type,
+          conteudo: type === "LINK" ? undefined : form.get("conteudo"),
+          urlExterna: type === "LINK" ? form.get("urlExterna") : undefined,
+        }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(result?.message ?? "Não foi possível adicionar o material.");
+      }
 
-    const result = await response?.json().catch(() => null);
-    if (!response?.ok) {
-      setError(result?.message ?? "Não foi possível adicionar o material.");
+      formElement.reset();
+      notify("success", "Material salvo na sua biblioteca.");
+      router.refresh();
+    } catch (requestError) {
+      const message =
+        requestError instanceof Error
+          ? requestError.message
+          : "Não foi possível adicionar o material.";
+      setError(message);
+      notify("error", message);
+    } finally {
       setPending(false);
-      return;
     }
-
-    event.currentTarget.reset();
-    setPending(false);
-    router.refresh();
   }
 
   const selected = types.find((item) => item.value === type) ?? types[0];

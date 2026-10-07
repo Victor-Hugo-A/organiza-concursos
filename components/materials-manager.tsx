@@ -29,6 +29,7 @@ import { PlanCreator } from "@/components/plan-creator";
 import { BackLink } from "@/components/back-link";
 import { TopicManager } from "@/components/topic-manager";
 import { LibraryMaterialCreator } from "@/components/library-material-creator";
+import { useToast } from "@/components/toast-provider";
 
 type Plan = {
   id: string;
@@ -100,6 +101,7 @@ export function MaterialsManager({
   selectedSubject: string;
 }) {
   const router = useRouter();
+  const { notify } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const attemptedAnalyses = useRef(new Set<string>());
   const analysisInFlight = useRef(false);
@@ -327,12 +329,17 @@ export function MaterialsManager({
     setMessage("");
     try {
       await requestJson(`/api/materials/${id}`, { method: "DELETE" });
-      setMessage("PDF excluído.");
+      setMessage("");
+      notify(
+        "destructive",
+        `Material excluído: “${title}”. Esta ação não pode ser desfeita.`,
+      );
       router.refresh();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Não foi possível excluir o PDF.",
-      );
+      const message =
+        err instanceof Error ? err.message : "Não foi possível excluir o material.";
+      setError(message);
+      notify("error", message);
     } finally {
       setDeletingId("");
     }

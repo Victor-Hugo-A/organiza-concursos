@@ -10,7 +10,10 @@ const schema = z
     titulo: z.string().trim().min(2).max(150),
     tipo: z.enum(["TEXTO", "ANOTACAO", "LINK"]),
     conteudo: z.string().trim().max(20000).optional(),
-    urlExterna: z.string().trim().url().max(2048).optional(),
+    urlExterna: z.preprocess(
+      (value) => (typeof value === "string" && !value.trim() ? undefined : value),
+      z.string().trim().url().max(2048).optional(),
+    ),
   })
   .superRefine((value, context) => {
     if ((value.tipo === "TEXTO" || value.tipo === "ANOTACAO") && !value.conteudo) {
