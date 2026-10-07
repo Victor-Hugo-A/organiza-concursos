@@ -49,6 +49,8 @@ model Usuario {
   tokensRedefinicao  TokenRedefinicaoSenha[]
   sessoes            Sessao[]
   sessoesEstudo      SessaoEstudo[]
+  questoes           QuestaoEstudo[]
+  tentativasQuestoes TentativaQuestao[]
 
   @@map("User")
 }
@@ -114,6 +116,7 @@ model MateriaEstudo {
   plano       PlanoEstudo  @relation(fields: [planoId], references: [id], onDelete: Cascade)
   topicos     TopicoEstudo[]
   materiais   MaterialEstudo[]
+  questoes    QuestaoEstudo[]
 
   @@index([planoId, ordem])
 }
@@ -130,6 +133,7 @@ model TopicoEstudo {
   topicoPai   TopicoEstudo?  @relation("HierarquiaTopicos", fields: [topicoPaiId], references: [id], onDelete: Cascade)
   subtopicos  TopicoEstudo[] @relation("HierarquiaTopicos")
   materiais   MaterialEstudo[]
+  questoes    QuestaoEstudo[]
 
   @@index([materiaId, topicoPaiId, ordem])
   @@unique([materiaId, topicoPaiId, titulo])
@@ -190,6 +194,43 @@ model SessaoEstudo {
   @@index([materialId, iniciadaEm])
   @@index([usuarioId, finalizadaEm])
   @@map("SessaoEstudoOrganiza")
+}
+
+model QuestaoEstudo {
+  id                String             @id @default(cuid())
+  usuarioId         String
+  materiaId         String
+  topicoId          String?
+  enunciado         String
+  alternativas      String[]
+  respostaCorreta   String
+  explicacao        String?
+  dificuldade       DificuldadeEstudo  @default(MEDIO)
+  criadoEm          DateTime           @default(now())
+  atualizadoEm      DateTime           @updatedAt
+  usuario           Usuario            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  materia           MateriaEstudo      @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  topico            TopicoEstudo?     @relation(fields: [topicoId], references: [id], onDelete: SetNull)
+  tentativas        TentativaQuestao[]
+
+  @@index([usuarioId, criadoEm])
+  @@index([materiaId, dificuldade])
+  @@index([topicoId])
+}
+
+model TentativaQuestao {
+  id                String          @id @default(cuid())
+  usuarioId         String
+  questaoId         String
+  respostaEscolhida String
+  correta           Boolean
+  respondidaEm      DateTime        @default(now())
+  usuario           Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  questao           QuestaoEstudo   @relation(fields: [questaoId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, respondidaEm])
+  @@index([questaoId, respondidaEm])
+  @@index([usuarioId, questaoId])
 }
 
 model PalavraChave {

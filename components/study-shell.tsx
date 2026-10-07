@@ -7,6 +7,7 @@ import {
   Bell,
   BellRing,
   BookOpenCheck,
+  ClipboardCheck,
   CalendarClock,
   ChevronDown,
   FileText,
@@ -25,6 +26,7 @@ const items = [
   { href: "/app", label: "Visão geral", icon: LayoutDashboard },
   { href: "/app/planos", label: "Meus planos", icon: Target },
   { href: "/app/materiais", label: "Minha Biblioteca", icon: FileText },
+  { href: "/app/pratica", label: "Prática", icon: ClipboardCheck },
   { href: "/app/revisoes", label: "Revisões", icon: CalendarClock },
 ];
 
@@ -32,6 +34,7 @@ const titles: Record<string, string> = {
   "/app": "Visão geral",
   "/app/planos": "Meus planos",
   "/app/materiais": "Minha Biblioteca",
+  "/app/pratica": "Prática",
   "/app/revisoes": "Revisões",
 };
 
