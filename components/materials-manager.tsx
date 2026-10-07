@@ -25,11 +25,16 @@ import {
 } from "lucide-react";
 import { PlanCreator } from "@/components/plan-creator";
 import { BackLink } from "@/components/back-link";
+import { TopicManager } from "@/components/topic-manager";
 
 type Plan = {
   id: string;
   titulo: string;
-  materias: { id: string; titulo: string }[];
+  materias: {
+    id: string;
+    titulo: string;
+    topicos: { id: string; titulo: string; topicoPaiId: string | null }[];
+  }[];
 };
 type Material = {
   id: string;
@@ -38,6 +43,8 @@ type Material = {
   urlArquivo: string;
   materiaId: string | null;
   planoId: string | null;
+  topicoId: string | null;
+  topico: { id: string; titulo: string } | null;
   resumo: string | null;
   pontosEstudo: string[];
   paginas: number | null;
@@ -97,6 +104,7 @@ export function MaterialsManager({
   const [creating, setCreating] = useState(false);
   const [analyzingId, setAnalyzingId] = useState("");
   const [movingId, setMovingId] = useState("");
+  const [topicUpdatingId, setTopicUpdatingId] = useState("");
   const [deletingId, setDeletingId] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -260,6 +268,34 @@ export function MaterialsManager({
       );
     } finally {
       setMovingId("");
+    }
+  }
+
+  async function updateMaterialTopic(
+    event: FormEvent<HTMLFormElement>,
+    id: string,
+  ) {
+    event.preventDefault();
+    setTopicUpdatingId(id);
+    setError("");
+    setMessage("");
+    const topicoId = String(new FormData(event.currentTarget).get("topicoId") ?? "");
+    try {
+      const result = await requestJson(`/api/materials/${id}/topic`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topicoId: topicoId || null }),
+      });
+      setMessage(result.message);
+      router.refresh();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível atualizar o tópico do material.",
+      );
+    } finally {
+      setTopicUpdatingId("");
     }
   }
 
@@ -550,6 +586,19 @@ export function MaterialsManager({
         </>
       ) : (
         <>
+          <TopicManager
+            materiaId={subject.id}
+            topics={subject.topicos}
+            materialCountByTopic={initialMaterials.reduce<Record<string, number>>(
+              (counts, material) => {
+                if (material.topicoId) {
+                  counts[material.topicoId] = (counts[material.topicoId] ?? 0) + 1;
+                }
+                return counts;
+              },
+              {},
+            )}
+          />
           <form
             ref={formRef}
             onSubmit={upload}
@@ -600,6 +649,22 @@ export function MaterialsManager({
                     placeholder="Ex.: Citologia — aula 1"
                     className="mt-1.5"
                   />
+                </label>
+                <label>
+                  Tópico relacionado
+                  <select name="topicoId" defaultValue="" className="mt-1.5">
+                    <option value="">Ainda não classificar em um tópico</option>
+                    {subject.topicos.map((topic) => {
+                      const parent = subject.topicos.find(
+                        (candidate) => candidate.id === topic.topicoPaiId,
+                      );
+                      return (
+                        <option key={topic.id} value={topic.id}>
+                          {parent ? `${parent.titulo} › ${topic.titulo}` : topic.titulo}
+                        </option>
+                      );
+                    })}
+                  </select>
                 </label>
                 <button disabled={!file || busy} className="btn-primary w-full">
                   {busy ? (
@@ -659,6 +724,11 @@ export function MaterialsManager({
                         <p className="mt-1 break-all text-xs text-stone-500">
                           {material.nomeArquivo}
                         </p>
+                        {material.topico && (
+                          <p className="mt-2 text-xs font-semibold text-emerald-800">
+                            Tópico: {material.topico.titulo}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -759,6 +829,43 @@ export function MaterialsManager({
                         ))}
                       </div>
                     </div>
+                  )}
+                  {subject.topicos.length > 0 && (
+                    <form
+                      onSubmit={(event) => updateMaterialTopic(event, material.id)}
+                      className="mt-5 flex flex-col gap-2 border-t border-stone-100 pt-5 sm:flex-row sm:items-end"
+                    >
+                      <label className="min-w-0 flex-1 text-sm font-semibold text-stone-700">
+                        Tópico deste material
+                        <select
+                          name="topicoId"
+                          defaultValue={material.topicoId ?? ""}
+                          className="mt-1.5"
+                        >
+                          <option value="">Sem tópico</option>
+                          {subject.topicos.map((topic) => {
+                            const parent = subject.topicos.find(
+                              (candidate) => candidate.id === topic.topicoPaiId,
+                            );
+                            return (
+                              <option key={topic.id} value={topic.id}>
+                                {parent
+                                  ? `${parent.titulo} › ${topic.titulo}`
+                                  : topic.titulo}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </label>
+                      <button
+                        disabled={Boolean(topicUpdatingId)}
+                        className="btn-secondary text-sm"
+                      >
+                        {topicUpdatingId === material.id
+                          ? "Salvando…"
+                          : "Salvar tópico"}
+                      </button>
+                    </form>
                   )}
                   {material.resumo && (
                     <p className="mt-5 text-xs leading-5 text-stone-500">

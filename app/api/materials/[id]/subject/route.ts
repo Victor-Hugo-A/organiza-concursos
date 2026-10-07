@@ -25,7 +25,7 @@ export async function PATCH(
     if (!materia) return fail("Matéria não encontrada na sua conta.", 404);
     const updated = await prisma.materialEstudo.updateMany({
       where: { id, usuarioId: user.id, materiaId: null },
-      data: { materiaId: materia.id, planoId: materia.planoId },
+      data: { materiaId: materia.id, planoId: materia.planoId, topicoId: null },
     });
     if (!updated.count)
       return fail("Este PDF não está disponível para organização.", 404);

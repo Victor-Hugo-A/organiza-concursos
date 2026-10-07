@@ -21,7 +21,14 @@ export default async function MaterialsPage({
         titulo: true,
         materias: {
           orderBy: [{ ordem: "asc" }, { titulo: "asc" }],
-          select: { id: true, titulo: true },
+          select: {
+            id: true,
+            titulo: true,
+            topicos: {
+              orderBy: [{ ordem: "asc" }, { titulo: "asc" }],
+              select: { id: true, titulo: true, topicoPaiId: true },
+            },
+          },
         },
       },
     }),
@@ -35,6 +42,8 @@ export default async function MaterialsPage({
         urlArquivo: true,
         materiaId: true,
         planoId: true,
+        topicoId: true,
+        topico: { select: { id: true, titulo: true } },
         resumo: true,
         pontosEstudo: true,
         paginas: true,

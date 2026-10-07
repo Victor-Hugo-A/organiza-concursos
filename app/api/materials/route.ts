@@ -19,6 +19,7 @@ export async function POST(request: Request) {
     const file = form.get("arquivo");
     const titulo = String(form.get("titulo") ?? "").trim();
     const materiaId = String(form.get("materiaId") ?? "").trim();
+    const topicoId = String(form.get("topicoId") ?? "").trim();
 
     if (!(file instanceof File) || file.type !== "application/pdf")
       return fail("Selecione um arquivo PDF válido.", 400);
@@ -36,6 +37,14 @@ export async function POST(request: Request) {
         "A matéria selecionada não está disponível na sua conta.",
         404,
       );
+    if (topicoId) {
+      const topico = await prisma.topicoEstudo.findFirst({
+        where: { id: topicoId, materiaId: materia.id },
+        select: { id: true },
+      });
+      if (!topico)
+        return fail("O tópico selecionado não pertence a esta matéria.", 400);
+    }
     const bytes = Buffer.from(await file.arrayBuffer());
     if (!isPdf(bytes))
       return fail(
@@ -71,6 +80,7 @@ export async function POST(request: Request) {
         usuarioId: user.id,
         planoId: materia.planoId,
         materiaId: materia.id,
+        topicoId: topicoId || null,
         titulo,
         nomeArquivo: cleanName,
         urlArquivo,

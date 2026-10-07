@@ -102,9 +102,27 @@ model MateriaEstudo {
   titulo      String
   ordem       Int          @default(0)
   plano       PlanoEstudo  @relation(fields: [planoId], references: [id], onDelete: Cascade)
+  topicos     TopicoEstudo[]
   materiais   MaterialEstudo[]
 
   @@index([planoId, ordem])
+}
+
+model TopicoEstudo {
+  id          String          @id @default(cuid())
+  materiaId   String
+  topicoPaiId String?
+  titulo      String
+  ordem       Int             @default(0)
+  criadoEm    DateTime        @default(now())
+  atualizadoEm DateTime       @updatedAt
+  materia     MateriaEstudo   @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  topicoPai   TopicoEstudo?  @relation("HierarquiaTopicos", fields: [topicoPaiId], references: [id], onDelete: Cascade)
+  subtopicos  TopicoEstudo[] @relation("HierarquiaTopicos")
+  materiais   MaterialEstudo[]
+
+  @@index([materiaId, topicoPaiId, ordem])
+  @@unique([materiaId, topicoPaiId, titulo])
 }
 
 model MaterialEstudo {
@@ -112,6 +130,7 @@ model MaterialEstudo {
   usuarioId         String
   planoId           String?
   materiaId         String?
+  topicoId          String?
   titulo            String
   nomeArquivo       String
   urlArquivo        String
@@ -128,12 +147,14 @@ model MaterialEstudo {
   usuario           Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   plano             PlanoEstudo?      @relation(fields: [planoId], references: [id], onDelete: SetNull)
   materia           MateriaEstudo?    @relation(fields: [materiaId], references: [id], onDelete: SetNull)
+  topico            TopicoEstudo?     @relation(fields: [topicoId], references: [id], onDelete: SetNull)
   palavrasChave     PalavraChave[]
   revisoes          Revisao[]
 
   @@index([usuarioId, criadoEm])
   @@index([planoId])
   @@index([materiaId])
+  @@index([topicoId])
 }
 
 model PalavraChave {
