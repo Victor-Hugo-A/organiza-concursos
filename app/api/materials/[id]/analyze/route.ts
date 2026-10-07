@@ -21,6 +21,8 @@ export async function POST(
       include: { materia: true, plano: true },
     });
     if (!material) return fail("Material não encontrado na sua conta.", 404);
+    if (material.tipo !== "PDF" || !material.urlArquivo)
+      return fail("Somente materiais em PDF podem receber análise automática.", 400);
     if (material.analiseStatus === "CONCLUIDA")
       return ok(null, "O resumo deste PDF já está pronto.");
     const started = new Date();

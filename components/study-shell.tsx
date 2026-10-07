@@ -24,14 +24,14 @@ import { useToast } from "@/components/toast-provider";
 const items = [
   { href: "/app", label: "Visão geral", icon: LayoutDashboard },
   { href: "/app/planos", label: "Meus planos", icon: Target },
-  { href: "/app/materiais", label: "Matérias", icon: FileText },
+  { href: "/app/materiais", label: "Minha Biblioteca", icon: FileText },
   { href: "/app/revisoes", label: "Revisões", icon: CalendarClock },
 ];
 
 const titles: Record<string, string> = {
   "/app": "Visão geral",
   "/app/planos": "Meus planos",
-  "/app/materiais": "Matérias",
+  "/app/materiais": "Minha Biblioteca",
   "/app/revisoes": "Revisões",
 };
 

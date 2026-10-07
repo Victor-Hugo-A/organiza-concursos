@@ -17,7 +17,9 @@ import {
   CheckCircle2,
   FileText,
   FolderUp,
+  Link2,
   Loader2,
+  NotebookPen,
   Plus,
   Search,
   Sparkles,
@@ -26,6 +28,7 @@ import {
 import { PlanCreator } from "@/components/plan-creator";
 import { BackLink } from "@/components/back-link";
 import { TopicManager } from "@/components/topic-manager";
+import { LibraryMaterialCreator } from "@/components/library-material-creator";
 
 type Plan = {
   id: string;
@@ -39,8 +42,11 @@ type Plan = {
 type Material = {
   id: string;
   titulo: string;
-  nomeArquivo: string;
-  urlArquivo: string;
+  nomeArquivo: string | null;
+  urlArquivo: string | null;
+  urlExterna: string | null;
+  conteudo: string | null;
+  tipo: "PDF" | "SLIDE" | "DOCUMENTO" | "TEXTO" | "ANOTACAO" | "LINK";
   materiaId: string | null;
   planoId: string | null;
   topicoId: string | null;
@@ -100,6 +106,7 @@ export function MaterialsManager({
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [search, setSearch] = useState("");
+  const [materialType, setMaterialType] = useState("TODOS");
   const [pending, setPending] = useState(false);
   const [creating, setCreating] = useState(false);
   const [analyzingId, setAnalyzingId] = useState("");
@@ -120,7 +127,15 @@ export function MaterialsManager({
   const materials = initialMaterials.filter(
     (material) =>
       material.materiaId === subject?.id &&
-      [material.titulo, ...material.palavrasChave.map((tag) => tag.termo)]
+      (materialType === "TODOS" || material.tipo === materialType) &&
+      [
+        material.titulo,
+        material.nomeArquivo,
+        material.conteudo,
+        material.urlExterna,
+        ...material.palavrasChave.map((tag) => tag.termo),
+      ]
+        .filter(Boolean)
         .join(" ")
         .toLocaleLowerCase("pt-BR")
         .includes(search.toLocaleLowerCase("pt-BR")),
@@ -180,6 +195,7 @@ export function MaterialsManager({
     const next = initialMaterials.find(
       (material) =>
         material.materiaId === selectedSubject &&
+        material.tipo === "PDF" &&
         material.analiseStatus === "PENDENTE" &&
         !material.resumo &&
         !attemptedAnalyses.current.has(material.id),
@@ -358,7 +374,7 @@ export function MaterialsManager({
         {subject ? "Um assunto de cada vez" : "Seu estudo, no lugar certo"}
       </p>
       <h1 className="mt-1 text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl">
-        {subject?.titulo ?? "Minhas matérias"}
+        {subject?.titulo ?? "Minha Biblioteca"}
       </h1>
       <p className="mt-3 max-w-2xl leading-7 text-stone-600">
         {subject
@@ -519,7 +535,7 @@ export function MaterialsManager({
                 {legacy.map((material) => (
                   <div key={material.id} className="rounded-2xl bg-white p-4">
                     <a
-                      href={material.urlArquivo}
+                      href={material.urlArquivo ?? material.urlExterna ?? "#"}
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center gap-2 font-semibold text-stone-900"
@@ -681,29 +697,42 @@ export function MaterialsManager({
               </div>
             </fieldset>
           </form>
+          <LibraryMaterialCreator materiaId={subject.id} topics={subject.topicos} />
           <section className="mt-10">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
               <h2 className="text-2xl font-semibold text-stone-950">
                 Materiais desta matéria
               </h2>
-              <label className="relative sm:w-72">
-                <span className="sr-only">
-                  Buscar por título ou palavra-chave
-                </span>
-                <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-stone-400" />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Título ou palavra-chave"
-                  className="pl-10"
-                />
-              </label>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <label className="relative sm:w-72">
+                  <span className="sr-only">Buscar na biblioteca</span>
+                  <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-stone-400" />
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Buscar na biblioteca"
+                    className="pl-10"
+                  />
+                </label>
+                <select
+                  value={materialType}
+                  onChange={(event) => setMaterialType(event.target.value)}
+                  aria-label="Filtrar por tipo de material"
+                  className="sm:w-40"
+                >
+                  <option value="TODOS">Todos os tipos</option>
+                  <option value="PDF">PDFs</option>
+                  <option value="TEXTO">Textos</option>
+                  <option value="ANOTACAO">Anotações</option>
+                  <option value="LINK">Links</option>
+                </select>
+              </div>
             </div>
             {!materials.length && (
               <p className="mt-5 rounded-2xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-600">
-                {search
+                {search || materialType !== "TODOS"
                   ? "Nenhum material corresponde à busca."
-                  : "Adicione o primeiro PDF desta matéria para começar sua biblioteca de estudo."}
+                  : "Adicione um PDF, texto, anotação ou link para começar sua biblioteca de estudo."}
               </p>
             )}
             <div className="mt-5 space-y-5">
@@ -715,14 +744,14 @@ export function MaterialsManager({
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex min-w-0 items-start gap-3">
                       <span className="rounded-xl bg-rose-50 p-3 text-rose-700">
-                        <FileText className="h-5 w-5" />
+                        {material.tipo === "LINK" ? <Link2 className="h-5 w-5" /> : material.tipo === "ANOTACAO" ? <NotebookPen className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
                       </span>
                       <div className="min-w-0">
                         <h3 className="break-words text-lg font-semibold text-stone-950">
                           {material.titulo}
                         </h3>
                         <p className="mt-1 break-all text-xs text-stone-500">
-                          {material.nomeArquivo}
+                          {material.nomeArquivo ?? (material.tipo === "ANOTACAO" ? "Anotação" : material.tipo === "TEXTO" ? "Texto" : material.tipo === "LINK" ? "Link externo" : "Material")}
                         </p>
                         {material.topico && (
                           <p className="mt-2 text-xs font-semibold text-emerald-800">
@@ -732,14 +761,16 @@ export function MaterialsManager({
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <a
-                        href={material.urlArquivo}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn-secondary text-sm"
-                      >
-                        Abrir PDF <ArrowRight className="h-4 w-4" />
-                      </a>
+                      {(material.urlArquivo || material.urlExterna) && (
+                        <a
+                          href={material.urlArquivo ?? material.urlExterna ?? undefined}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn-secondary text-sm"
+                        >
+                          {material.tipo === "LINK" ? "Abrir link" : "Abrir PDF"} <ArrowRight className="h-4 w-4" />
+                        </a>
+                      )}
                       <button
                         type="button"
                         onClick={() =>
@@ -758,7 +789,12 @@ export function MaterialsManager({
                       </button>
                     </div>
                   </div>
-                  {material.resumo ? (
+                  {material.conteudo && (
+                    <div className="mt-5 rounded-2xl bg-stone-50 p-4 text-sm leading-7 text-stone-700">
+                      <p className="whitespace-pre-wrap">{material.conteudo}</p>
+                    </div>
+                  )}
+                  {material.tipo === "PDF" && (material.resumo ? (
                     <div className="mt-6 border-t border-stone-100 pt-5">
                       <h4 className="flex items-center gap-2 font-semibold text-emerald-900">
                         <Sparkles className="h-4 w-4" />
@@ -809,7 +845,7 @@ export function MaterialsManager({
                           : "Gerar resumo e palavras-chave"}
                       </button>
                     </div>
-                  )}
+                  ))}
                   {material.palavrasChave.length > 0 && (
                     <div className="mt-5">
                       <h4 className="text-sm font-semibold text-stone-900">

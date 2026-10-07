@@ -19,6 +19,9 @@ enum MaterialTipo {
   PDF
   SLIDE
   DOCUMENTO
+  TEXTO
+  ANOTACAO
+  LINK
 }
 
 enum RevisaoStatus {
@@ -132,8 +135,10 @@ model MaterialEstudo {
   materiaId         String?
   topicoId          String?
   titulo            String
-  nomeArquivo       String
-  urlArquivo        String
+  nomeArquivo       String?
+  urlArquivo        String?
+  urlExterna        String?
+  conteudo          String?
   tipo              MaterialTipo      @default(PDF)
   tamanhoBytes      Int?
   paginas           Int?
