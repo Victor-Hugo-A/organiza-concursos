@@ -30,6 +30,7 @@ import { BackLink } from "@/components/back-link";
 import { TopicManager } from "@/components/topic-manager";
 import { LibraryMaterialCreator } from "@/components/library-material-creator";
 import { useToast } from "@/components/toast-provider";
+import { MaterialStudyActions } from "@/components/material-study-actions";
 
 type Plan = {
   id: string;
@@ -55,9 +56,13 @@ type Material = {
   resumo: string | null;
   pontosEstudo: string[];
   paginas: number | null;
+  paginaAtual: number | null;
+  concluidoEm: string | null;
+  ultimoAcessoEm: string | null;
   analiseStatus: string;
   analiseErro: string | null;
   palavrasChave: { id: string; termo: string }[];
+  sessoesEstudo: { id: string; iniciadaEm: string }[];
 };
 
 function studySummary(value: string) {
@@ -746,6 +751,7 @@ export function MaterialsManager({
               {materials.map((material) => (
                 <article
                   key={material.id}
+                  id={`material-${material.id}`}
                   className="rounded-3xl border border-stone-200 bg-white p-6 sm:p-7"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
@@ -770,7 +776,11 @@ export function MaterialsManager({
                     <div className="flex flex-wrap gap-2">
                       {(material.urlArquivo || material.urlExterna) && (
                         <a
-                          href={material.urlArquivo ?? material.urlExterna ?? undefined}
+                          href={
+                            material.urlArquivo
+                              ? `${material.urlArquivo}${material.tipo === "PDF" && material.paginaAtual ? `#page=${material.paginaAtual}` : ""}`
+                              : material.urlExterna ?? undefined
+                          }
                           target="_blank"
                           rel="noreferrer"
                           className="btn-secondary text-sm"
@@ -796,6 +806,16 @@ export function MaterialsManager({
                       </button>
                     </div>
                   </div>
+                  <MaterialStudyActions
+                    material={{
+                      id: material.id,
+                      titulo: material.titulo,
+                      paginas: material.paginas,
+                      paginaAtual: material.paginaAtual,
+                      concluidoEm: material.concluidoEm,
+                      activeSession: material.sessoesEstudo[0] ?? null,
+                    }}
+                  />
                   {material.conteudo && (
                     <div className="mt-5 rounded-2xl bg-stone-50 p-4 text-sm leading-7 text-stone-700">
                       <p className="whitespace-pre-wrap">{material.conteudo}</p>

@@ -29,6 +29,12 @@ enum RevisaoStatus {
   CONCLUIDA
 }
 
+enum DificuldadeEstudo {
+  FACIL
+  MEDIO
+  DIFICIL
+}
+
 model Usuario {
   id                 String              @id @default(cuid())
   nome               String              @map("name")
@@ -42,6 +48,7 @@ model Usuario {
   tokensVerificacao  TokenVerificacao[]
   tokensRedefinicao  TokenRedefinicaoSenha[]
   sessoes            Sessao[]
+  sessoesEstudo      SessaoEstudo[]
 
   @@map("User")
 }
@@ -147,6 +154,9 @@ model MaterialEstudo {
   analiseStatus     String            @default("PENDENTE")
   analiseErro       String?
   analiseIniciadaEm  DateTime?
+  paginaAtual       Int?
+  concluidoEm       DateTime?
+  ultimoAcessoEm    DateTime?
   criadoEm          DateTime          @default(now())
   atualizadoEm      DateTime          @updatedAt
   usuario           Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
@@ -155,11 +165,31 @@ model MaterialEstudo {
   topico            TopicoEstudo?     @relation(fields: [topicoId], references: [id], onDelete: SetNull)
   palavrasChave     PalavraChave[]
   revisoes          Revisao[]
+  sessoesEstudo     SessaoEstudo[]
 
   @@index([usuarioId, criadoEm])
+  @@index([usuarioId, ultimoAcessoEm])
   @@index([planoId])
   @@index([materiaId])
   @@index([topicoId])
+}
+
+model SessaoEstudo {
+  id               String             @id @default(cuid())
+  usuarioId        String
+  materialId       String
+  iniciadaEm       DateTime           @default(now())
+  finalizadaEm     DateTime?
+  duracaoSegundos  Int?
+  dificuldade      DificuldadeEstudo?
+  criadoEm         DateTime           @default(now())
+  usuario          Usuario            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  material         MaterialEstudo     @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, iniciadaEm])
+  @@index([materialId, iniciadaEm])
+  @@index([usuarioId, finalizadaEm])
+  @@map("SessaoEstudoOrganiza")
 }
 
 model PalavraChave {

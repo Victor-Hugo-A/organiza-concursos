@@ -50,9 +50,18 @@ export default async function MaterialsPage({
         resumo: true,
         pontosEstudo: true,
         paginas: true,
+        paginaAtual: true,
+        concluidoEm: true,
+        ultimoAcessoEm: true,
         analiseStatus: true,
         analiseErro: true,
         palavrasChave: { select: { id: true, termo: true } },
+        sessoesEstudo: {
+          where: { finalizadaEm: null },
+          orderBy: { iniciadaEm: "desc" },
+          take: 1,
+          select: { id: true, iniciadaEm: true },
+        },
       },
     }),
   ]);
@@ -71,7 +80,15 @@ export default async function MaterialsPage({
     <MaterialsManager
       key={`${selectedPlan}:${selectedSubject}`}
       plans={plans}
-      initialMaterials={materials}
+      initialMaterials={materials.map((material) => ({
+        ...material,
+        concluidoEm: material.concluidoEm?.toISOString() ?? null,
+        ultimoAcessoEm: material.ultimoAcessoEm?.toISOString() ?? null,
+        sessoesEstudo: material.sessoesEstudo.map((session) => ({
+          ...session,
+          iniciadaEm: session.iniciadaEm.toISOString(),
+        })),
+      }))}
       selectedPlan={selectedPlan}
       selectedSubject={selectedSubject}
     />
