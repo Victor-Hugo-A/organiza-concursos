@@ -16,6 +16,7 @@ import {
   Menu,
   Plus,
   Search,
+  StickyNote,
   Target,
 } from "lucide-react";
 import clsx from "clsx";
@@ -28,6 +29,7 @@ const items = [
   { href: "/app/planos", label: "Meus planos", icon: Target },
   { href: "/app/materiais", label: "Minha Biblioteca", icon: FileText },
   { href: "/app/busca", label: "Pesquisar", icon: Search },
+  { href: "/app/anotacoes", label: "Anotações", icon: StickyNote },
   { href: "/app/pratica", label: "Prática", icon: ClipboardCheck },
   { href: "/app/revisoes", label: "Revisões", icon: CalendarClock },
 ];
@@ -37,6 +39,7 @@ const titles: Record<string, string> = {
   "/app/planos": "Meus planos",
   "/app/materiais": "Minha Biblioteca",
   "/app/busca": "Pesquisar",
+  "/app/anotacoes": "Anotações",
   "/app/pratica": "Prática",
   "/app/revisoes": "Revisões",
 };
