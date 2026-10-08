@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2, Sparkles } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
 
 async function post(url: string) {
   const response = await fetch(url, { method: "POST" });
@@ -14,6 +15,7 @@ async function post(url: string) {
 
 export function CompleteReviewButton({ reviewId }: { reviewId: string }) {
   const router = useRouter();
+  const { notify } = useToast();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,10 +23,13 @@ export function CompleteReviewButton({ reviewId }: { reviewId: string }) {
     setPending(true);
     setError("");
     try {
-      await post(`/api/reviews/${reviewId}/complete`);
+      const result = await post(`/api/reviews/${reviewId}/complete`);
+      notify("success", result.message ?? "Revisão concluída.");
       router.refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Tente novamente.");
+      const message = cause instanceof Error ? cause.message : "Tente novamente.";
+      setError(message);
+      notify("error", message);
     } finally {
       setPending(false);
     }
@@ -48,6 +53,7 @@ export function CompleteReviewButton({ reviewId }: { reviewId: string }) {
 
 export function PrepareReviewsButton() {
   const router = useRouter();
+  const { notify } = useToast();
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -59,9 +65,12 @@ export function PrepareReviewsButton() {
     try {
       const result = await post("/api/reviews/prepare");
       setMessage(result.message);
+      notify("success", result.message ?? "Agenda preparada.");
       router.refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Tente novamente.");
+      const message = cause instanceof Error ? cause.message : "Tente novamente.";
+      setError(message);
+      notify("error", message);
     } finally {
       setPending(false);
     }

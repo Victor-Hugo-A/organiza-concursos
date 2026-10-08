@@ -1,0 +1,4 @@
+CREATE TYPE "RevisaoOrigem" AS ENUM ('AUTOMATICA', 'MANUAL');
+
+ALTER TABLE "Revisao"
+ADD COLUMN "origem" "RevisaoOrigem" NOT NULL DEFAULT 'AUTOMATICA';

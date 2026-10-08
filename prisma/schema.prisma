@@ -29,6 +29,11 @@ enum RevisaoStatus {
   CONCLUIDA
 }
 
+enum RevisaoOrigem {
+  AUTOMATICA
+  MANUAL
+}
+
 enum DificuldadeEstudo {
   FACIL
   MEDIO
@@ -251,6 +256,7 @@ model Revisao {
   agendadaPara DateTime
   concluidaEm DateTime?
   status      RevisaoStatus  @default(PENDENTE)
+  origem      RevisaoOrigem  @default(AUTOMATICA)
   criadoEm    DateTime       @default(now())
   material    MaterialEstudo @relation(fields: [materialId], references: [id], onDelete: Cascade)
 

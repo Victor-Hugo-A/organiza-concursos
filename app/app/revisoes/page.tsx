@@ -8,6 +8,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { CompleteReviewButton, PrepareReviewsButton } from "@/components/review-actions";
+import { ManualReviewScheduler } from "@/components/manual-review-scheduler";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { reviewSteps } from "@/lib/review-schedule";
@@ -22,7 +23,7 @@ const formatter = new Intl.DateTimeFormat("pt-BR", {
 export default async function ReviewsPage() {
   const user = await getCurrentUser();
   if (!user) return null;
-  const [reviews, completed] = await Promise.all([
+  const [reviews, completed, materials] = await Promise.all([
     prisma.revisao.findMany({
       where: { material: { usuarioId: user.id }, status: "PENDENTE" },
       orderBy: { agendadaPara: "asc" },
@@ -33,6 +34,11 @@ export default async function ReviewsPage() {
       orderBy: { concluidaEm: "desc" },
       take: 6,
       include: { material: true },
+    }),
+    prisma.materialEstudo.findMany({
+      where: { usuarioId: user.id },
+      orderBy: { atualizadoEm: "desc" },
+      select: { id: true, titulo: true, materia: { select: { titulo: true } } },
     }),
   ]);
   const todayEnd = new Date();
@@ -94,6 +100,8 @@ export default async function ReviewsPage() {
         </ol>
       </section>
 
+      <ManualReviewScheduler materials={materials} />
+
       <section className="mt-10">
         <div className="flex items-end justify-between gap-4">
           <div>
@@ -122,6 +130,7 @@ export default async function ReviewsPage() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <h3 className="font-semibold text-stone-950">{review.titulo}</h3>
+                    {review.origem === "MANUAL" && <span className="mt-2 inline-flex rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-800">Agendada manualmente</span>}
                     <p className="mt-0.5 truncate text-sm text-stone-500">
                       {review.material.titulo}{review.material.materia ? ` · ${review.material.materia.titulo}` : ""}
                     </p>
