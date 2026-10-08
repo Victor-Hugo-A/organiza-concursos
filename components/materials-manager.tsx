@@ -31,6 +31,7 @@ import { TopicManager } from "@/components/topic-manager";
 import { LibraryMaterialCreator } from "@/components/library-material-creator";
 import { useToast } from "@/components/toast-provider";
 import { MaterialStudyActions } from "@/components/material-study-actions";
+import { DeleteMaterialDialog } from "@/components/delete-material-dialog";
 
 type Plan = {
   id: string;
@@ -120,6 +121,7 @@ export function MaterialsManager({
   const [movingId, setMovingId] = useState("");
   const [topicUpdatingId, setTopicUpdatingId] = useState("");
   const [deletingId, setDeletingId] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [subjectError, setSubjectError] = useState("");
@@ -322,13 +324,9 @@ export function MaterialsManager({
     }
   }
 
-  async function removeMaterial(id: string, title: string) {
-    if (
-      !window.confirm(
-        `Excluir “${title}”? O PDF, o resumo e as palavras-chave serão removidos.`,
-      )
-    )
-      return;
+  async function removeMaterial() {
+    if (!deleteTarget) return;
+    const { id, title } = deleteTarget;
     setDeletingId(id);
     setError("");
     setMessage("");
@@ -339,6 +337,7 @@ export function MaterialsManager({
         "destructive",
         `Material excluído: “${title}”. Esta ação não pode ser desfeita.`,
       );
+      setDeleteTarget(null);
       router.refresh();
     } catch (err) {
       const message =
@@ -593,7 +592,7 @@ export function MaterialsManager({
                     <button
                       type="button"
                       onClick={() =>
-                        removeMaterial(material.id, material.titulo)
+                        setDeleteTarget({ id: material.id, title: material.titulo })
                       }
                       disabled={Boolean(deletingId)}
                       className="btn-secondary mt-2 text-rose-700 hover:border-rose-300 hover:bg-rose-50"
@@ -791,7 +790,7 @@ export function MaterialsManager({
                       <button
                         type="button"
                         onClick={() =>
-                          removeMaterial(material.id, material.titulo)
+                          setDeleteTarget({ id: material.id, title: material.titulo })
                         }
                         disabled={Boolean(deletingId)}
                         className="btn-secondary text-sm text-rose-700 hover:border-rose-300 hover:bg-rose-50"
@@ -950,6 +949,12 @@ export function MaterialsManager({
           </Link>
         </>
       )}
+      <DeleteMaterialDialog
+        material={deleteTarget ? { id: deleteTarget.id, titulo: deleteTarget.title } : null}
+        pending={Boolean(deletingId)}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={removeMaterial}
+      />
     </div>
   );
 }
