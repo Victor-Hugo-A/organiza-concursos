@@ -8,7 +8,7 @@ export default async function PracticePage() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const [plans, questions, attempts, correct] = await Promise.all([
+  const [plans, questions, attempts, correct, attemptsByQuestion] = await Promise.all([
     prisma.planoEstudo.findMany({
       where: { usuarioId: user.id, arquivado: false },
       orderBy: { titulo: "asc" },
@@ -49,13 +49,27 @@ export default async function PracticePage() {
     }),
     prisma.tentativaQuestao.count({ where: { usuarioId: user.id } }),
     prisma.tentativaQuestao.count({ where: { usuarioId: user.id, correta: true } }),
+    prisma.tentativaQuestao.groupBy({
+      by: ["questaoId", "correta"],
+      where: { usuarioId: user.id },
+      _count: { _all: true },
+    }),
   ]);
+
+  const questionAttempts = new Map<string, { correct: number; incorrect: number }>();
+  for (const attempt of attemptsByQuestion) {
+    const totals = questionAttempts.get(attempt.questaoId) ?? { correct: 0, incorrect: 0 };
+    if (attempt.correta) totals.correct = attempt._count._all;
+    else totals.incorrect = attempt._count._all;
+    questionAttempts.set(attempt.questaoId, totals);
+  }
 
   return (
     <PracticeManager
       plans={plans}
       questions={questions.map((question) => ({
         ...question,
+        attemptTotals: questionAttempts.get(question.id) ?? { correct: 0, incorrect: 0 },
         tentativas: question.tentativas.map((attempt) => ({
           ...attempt,
           respondidaEm: attempt.respondidaEm.toISOString(),

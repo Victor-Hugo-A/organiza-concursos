@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { CheckCircle2, CircleAlert, ClipboardCheck, Loader2, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleAlert, ClipboardCheck, Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/toast-provider";
 
@@ -16,6 +16,7 @@ type Question = {
   materia: { titulo: string };
   topico: { titulo: string } | null;
   tentativas: { correta: boolean; respondidaEm: string }[];
+  attemptTotals: { correct: number; incorrect: number };
   _count: { tentativas: number };
 };
 type AnswerResult = { correta: boolean; respostaCorreta: string; explicacao: string | null };
@@ -32,6 +33,37 @@ async function requestJson(url: string, options: RequestInit) {
   if (response.status === 204) return null;
   if (!response.ok) throw new Error(result?.message ?? "Não foi possível concluir esta ação.");
   return result;
+}
+
+function DeleteQuestionDialog({
+  question,
+  isDeleting,
+  onCancel,
+  onConfirm,
+}: {
+  question: Question;
+  isDeleting: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-stone-950/35 p-4" role="presentation">
+      <div role="dialog" aria-modal="true" aria-labelledby="delete-question-title" className="w-full max-w-md rounded-3xl border border-rose-100 bg-white p-6 shadow-2xl sm:p-7">
+        <div className="flex items-start gap-4">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-rose-50 text-rose-700"><AlertTriangle className="h-5 w-5" /></div>
+          <div>
+            <p className="text-sm font-semibold text-rose-700">Excluir questão</p>
+            <h2 id="delete-question-title" className="mt-1 text-xl font-semibold text-stone-950">Remover esta questão?</h2>
+            <p className="mt-2 text-sm leading-6 text-stone-600">Esta ação apagará a questão e {question._count.tentativas} {question._count.tentativas === 1 ? "tentativa registrada" : "tentativas registradas"}. Ela não poderá ser desfeita.</p>
+          </div>
+        </div>
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button type="button" onClick={onCancel} disabled={isDeleting} className="btn-secondary">Cancelar</button>
+          <button type="button" onClick={onConfirm} disabled={isDeleting} className="btn-danger">{isDeleting && <Loader2 className="h-4 w-4 animate-spin" />} Excluir questão</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function PracticeManager({
@@ -51,6 +83,7 @@ export function PracticeManager({
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [results, setResults] = useState<Record<string, AnswerResult>>({});
   const [pending, setPending] = useState("");
+  const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null);
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId);
   const subjects = selectedPlan?.materias ?? [];
   const selectedSubject = subjects.find((subject) => subject.id === selectedSubjectId) ?? subjects[0];
@@ -119,11 +152,11 @@ export function PracticeManager({
   }
 
   async function removeQuestion(question: Question) {
-    if (!window.confirm(`Excluir esta questão? As ${question._count.tentativas} tentativa(s) registradas também serão removidas.`)) return;
     setPending(question.id);
     try {
       await requestJson(`/api/questions/${question.id}`, { method: "DELETE" });
       notify("destructive", "Questão excluída. As tentativas vinculadas foram removidas.");
+      setQuestionToDelete(null);
       router.refresh();
     } catch (error) {
       notify("error", error instanceof Error ? error.message : "Não foi possível excluir a questão.");
@@ -148,6 +181,16 @@ export function PracticeManager({
     }
 
     return "border-stone-200 hover:border-stone-300";
+  }
+
+  function lastAttemptLabel(question: Question) {
+    const lastAttempt = question.tentativas[0];
+    if (!lastAttempt) return null;
+
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(new Date(lastAttempt.respondidaEm));
   }
 
   return (
@@ -180,9 +223,10 @@ export function PracticeManager({
       <section className="mt-10"><div className="flex items-center gap-2"><ClipboardCheck className="h-5 w-5 text-emerald-800" /><h2 className="text-2xl font-semibold text-stone-950">Praticar</h2></div>
         {!questions.length ? <div className="mt-5 rounded-3xl border border-dashed border-stone-300 bg-white/60 p-10 text-center"><ClipboardCheck className="mx-auto h-7 w-7 text-stone-400" /><h3 className="mt-3 font-semibold text-stone-950">Nenhuma questão cadastrada</h3><p className="mt-2 text-sm text-stone-600">Comece registrando uma questão da sua matéria para praticar aqui.</p></div> : <div className="mt-5 space-y-5">{questions.map((question) => {
           const result = results[question.id];
-          return <article key={question.id} className="rounded-3xl border border-stone-200 bg-white p-5 sm:p-7"><div className="flex flex-wrap items-start justify-between gap-3"><div className="flex flex-wrap gap-2"><span className="badge">{question.materia.titulo}</span>{question.topico && <span className="badge">{question.topico.titulo}</span>}<span className="badge">{difficultyLabel(question.dificuldade)}</span></div><button type="button" onClick={() => removeQuestion(question)} disabled={Boolean(pending)} className="rounded-lg p-2 text-stone-400 hover:bg-rose-50 hover:text-rose-700" aria-label="Excluir questão"><Trash2 className="h-4 w-4" /></button></div><p className="mt-5 whitespace-pre-wrap text-base leading-7 text-stone-900">{question.enunciado}</p><div className="mt-5 grid gap-3">{question.alternativas.map((alternative, index) => <label key={alternative} className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition ${alternativeStateClass(question.id, alternative, result)}`}><input type="radio" name={`question-${question.id}`} checked={selectedAnswers[question.id] === alternative} onChange={() => setSelectedAnswers((current) => ({ ...current, [question.id]: alternative }))} className="mt-1" /><span><strong className="mr-2 text-emerald-800">{labels[index]}.</strong>{alternative}</span></label>)}</div><div className="mt-5 flex flex-wrap items-center gap-3"><button type="button" onClick={() => answer(question)} disabled={Boolean(pending)} className="btn-primary">{pending === question.id && <Loader2 className="h-4 w-4 animate-spin" />} Responder</button><span className="text-xs text-stone-500">{question._count.tentativas} {question._count.tentativas === 1 ? "tentativa" : "tentativas"}</span>{question.tentativas[0] && <span className="text-xs text-stone-500">Última: {question.tentativas[0].correta ? "acertou" : "errou"} em {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(question.tentativas[0].respondidaEm))}</span>}</div>{result && <div className={`mt-5 rounded-2xl p-4 ${result.correta ? "bg-emerald-50 text-emerald-950" : "bg-amber-50 text-amber-950"}`}><p className="flex items-center gap-2 font-semibold">{result.correta ? <CheckCircle2 className="h-4 w-4" /> : <CircleAlert className="h-4 w-4" />}{result.correta ? "Você acertou." : `Resposta correta: ${result.respostaCorreta}`}</p>{result.explicacao && <p className="mt-2 text-sm leading-6">{result.explicacao}</p>}</div>}</article>;
+          return <article key={question.id} className="rounded-3xl border border-stone-200 bg-white p-5 sm:p-7"><div className="flex flex-wrap items-start justify-between gap-3"><div className="flex flex-wrap gap-2"><span className="badge">{question.materia.titulo}</span>{question.topico && <span className="badge">{question.topico.titulo}</span>}<span className="badge">{difficultyLabel(question.dificuldade)}</span></div><button type="button" onClick={() => setQuestionToDelete(question)} disabled={Boolean(pending)} className="rounded-lg p-2 text-stone-400 hover:bg-rose-50 hover:text-rose-700" aria-label="Excluir questão"><Trash2 className="h-4 w-4" /></button></div><p className="mt-5 whitespace-pre-wrap text-base leading-7 text-stone-900">{question.enunciado}</p><div className="mt-5 grid gap-3">{question.alternativas.map((alternative, index) => <label key={alternative} className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition ${alternativeStateClass(question.id, alternative, result)}`}><input type="radio" name={`question-${question.id}`} checked={selectedAnswers[question.id] === alternative} onChange={() => setSelectedAnswers((current) => ({ ...current, [question.id]: alternative }))} className="!mt-0.5 !h-4 !w-4 shrink-0 !p-0" /><span className="min-w-0 flex-1 text-left"><strong className="mr-2 text-emerald-800">{labels[index]}.</strong>{alternative}</span></label>)}</div><div className="mt-5 flex flex-wrap items-center gap-3"><button type="button" onClick={() => answer(question)} disabled={Boolean(pending)} className="btn-primary">{pending === question.id && <Loader2 className="h-4 w-4 animate-spin" />} Responder</button><span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-600">{question._count.tentativas} {question._count.tentativas === 1 ? "tentativa" : "tentativas"}</span><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">{question.attemptTotals.correct} {question.attemptTotals.correct === 1 ? "acerto" : "acertos"}</span><span className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">{question.attemptTotals.incorrect} {question.attemptTotals.incorrect === 1 ? "erro" : "erros"}</span>{lastAttemptLabel(question) && <span className="text-xs text-stone-500">Última tentativa: {question.tentativas[0]?.correta ? "acertou" : "errou"} em {lastAttemptLabel(question)}</span>}</div>{result && <div className={`mt-5 rounded-2xl p-4 ${result.correta ? "bg-emerald-50 text-emerald-950" : "bg-amber-50 text-amber-950"}`}><p className="flex items-center gap-2 font-semibold">{result.correta ? <CheckCircle2 className="h-4 w-4" /> : <CircleAlert className="h-4 w-4" />}{result.correta ? "Você acertou." : `Resposta correta: ${result.respostaCorreta}`}</p>{result.explicacao && <p className="mt-2 text-sm leading-6">{result.explicacao}</p>}</div>}</article>;
         })}</div>}
       </section>
+      {questionToDelete && <DeleteQuestionDialog question={questionToDelete} isDeleting={pending === questionToDelete.id} onCancel={() => setQuestionToDelete(null)} onConfirm={() => removeQuestion(questionToDelete)} />}
     </div>
   );
 }
