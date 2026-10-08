@@ -78,6 +78,7 @@ export function PracticeManager({
   const router = useRouter();
   const { notify } = useToast();
   const [creatorOpen, setCreatorOpen] = useState(false);
+  const [correctAlternativeIndex, setCorrectAlternativeIndex] = useState(0);
   const [selectedPlanId, setSelectedPlanId] = useState(plans[0]?.id ?? "");
   const [selectedSubjectId, setSelectedSubjectId] = useState(plans[0]?.materias[0]?.id ?? "");
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
@@ -117,6 +118,7 @@ export function PracticeManager({
         }),
       });
       formElement.reset();
+      setCorrectAlternativeIndex(0);
       setCreatorOpen(false);
       notify("success", result.message ?? "Questão adicionada à sua prática.");
       router.refresh();
@@ -213,7 +215,7 @@ export function PracticeManager({
             <div className="grid gap-4 sm:grid-cols-2"><label>Plano<select value={selectedPlanId} onChange={(event) => choosePlan(event.target.value)} className="mt-1.5">{plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.titulo}</option>)}</select></label><label>Matéria<select name="materiaId" value={selectedSubject?.id ?? ""} onChange={(event) => setSelectedSubjectId(event.target.value)} className="mt-1.5">{subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.titulo}</option>)}</select></label></div>
             <div className="grid gap-4 sm:grid-cols-2"><label>Tópico <span className="font-normal text-stone-500">(opcional)</span><select key={selectedSubject?.id} name="topicoId" defaultValue="" className="mt-1.5"><option value="">Sem tópico</option>{availableTopics.map((topic) => <option key={topic.id} value={topic.id}>{topic.titulo}</option>)}</select></label><label>Dificuldade<select name="dificuldade" defaultValue="MEDIO" className="mt-1.5"><option value="FACIL">Fácil</option><option value="MEDIO">Médio</option><option value="DIFICIL">Difícil</option></select></label></div>
             <label>Enunciado<textarea name="enunciado" required minLength={10} maxLength={10000} rows={4} className="mt-1.5" placeholder="Escreva a pergunta da questão..." /></label>
-            <fieldset><legend className="text-sm font-semibold text-stone-700">Alternativas e resposta correta</legend><div className="mt-3 grid gap-3">{labels.map((label, index) => <label key={label} className="flex items-center gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white text-sm font-bold text-emerald-800">{label}</span><input name={`alternativa-${label}`} required maxLength={1000} placeholder={`Alternativa ${label}`} /><input type="radio" name="respostaCorreta" value={index} defaultChecked={index === 0} aria-label={`Marcar alternativa ${label} como correta`} /></label>)}</div></fieldset>
+            <fieldset><legend className="text-sm font-semibold text-stone-700">Alternativas e resposta correta</legend><p className="mt-1 text-xs font-normal text-stone-500">Selecione a op??o correta no c?rculo ? direita de cada alternativa.</p><div className="mt-4 grid gap-3">{labels.map((label, index) => { const selected = correctAlternativeIndex === index; return <label key={label} className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-3 transition ${selected ? "border-emerald-400 bg-emerald-50" : "border-stone-200 bg-white hover:border-emerald-200"}`}><span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-sm font-bold ${selected ? "bg-emerald-700 text-white" : "bg-stone-100 text-stone-700"}`}>{label}</span><input name={`alternativa-${label}`} required maxLength={1000} placeholder={`Escreva a alternativa ${label}`} className="min-w-0 flex-1" onClick={(event) => event.stopPropagation()} /><span className={`hidden text-xs font-semibold sm:inline ${selected ? "text-emerald-800" : "text-stone-400"}`}>{selected ? "Resposta correta" : "Marcar correta"}</span><input type="radio" name="respostaCorreta" value={index} checked={selected} onChange={() => setCorrectAlternativeIndex(index)} className="!h-5 !w-5 shrink-0 !p-0 accent-emerald-700" aria-label={`Marcar alternativa ${label} como correta`} /></label>; })}</div></fieldset>
             <label>Explicação <span className="font-normal text-stone-500">(opcional)</span><textarea name="explicacao" maxLength={5000} rows={3} className="mt-1.5" placeholder="Explique por que a resposta correta é a melhor opção." /></label>
             <div className="flex flex-wrap gap-3"><button disabled={pending === "create"} className="btn-primary">{pending === "create" && <Loader2 className="h-4 w-4 animate-spin" />} Salvar questão</button><button type="button" onClick={() => setCreatorOpen(false)} className="btn-secondary">Cancelar</button></div>
           </form>}
