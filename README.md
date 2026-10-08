@@ -1,76 +1,108 @@
-<div align="center">
+# Organiza
 
-# organiza
+Uma plataforma pessoal para **organizar, estudar, praticar, revisar e acompanhar a evolução**. O foco é transformar materiais dispersos em uma rotina clara de estudo, para ENEM, vestibulares, concursos ou qualquer objetivo individual.
 
-### Um espaço pessoal para transformar materiais soltos em um plano de estudo claro.
-
-<p>ENEM · PAS · vestibulares · concursos públicos</p>
-
-</div>
-
----
-
-## Por que existe
-
-Estudar costuma envolver muitos PDFs, slides, apostilas e assuntos espalhados. O Organiza reúne esse material em um percurso simples: a pessoa escolhe uma prova, separa as matérias e mantém cada PDF com uma síntese, pontos de revisão e palavras-chave.
-
-```mermaid
-flowchart LR
-    A[Plano de estudo<br/>Ex.: ENEM 2027] --> B[Matéria<br/>Ex.: Português]
-    B --> C[PDF ou slide]
-    C --> D[Leitura do documento<br/>texto ou OCR]
-    D --> E[Síntese ampla, palavras-chave<br/>e pontos para revisar]
+```text
+Objetivo → Disciplina → Tópico → Material → Estudo → Prática → Revisão
 ```
 
-## A experiência de estudo
-
-| Momento | O que acontece |
-| --- | --- |
-| **Criar um plano** | A pessoa dá um nome ao objetivo, como “Concurso Banco do Brasil”. |
-| **Organizar matérias** | Cada assunto fica dentro do plano: Português, Matemática, Direito e assim por diante. |
-| **Adicionar um material** | O PDF ou slide entra diretamente na matéria certa. |
-| **Retomar o conteúdo** | A plataforma mostra uma síntese com páginas de referência, temas e pontos de revisão. |
-
-## O que a plataforma oferece
+## O que está implementado
 
 | Área | Recursos |
 | --- | --- |
-| **Conta** | Cadastro, confirmação de e-mail, login e recuperação de senha. |
-| **Planos** | Organização separada para cada prova ou objetivo. |
-| **Matérias** | Biblioteca por assunto, sem misturar materiais de áreas diferentes. |
-| **PDFs** | Upload, abertura do arquivo, resumo, palavras-chave e exclusão segura. |
-| **Revisões** | Pontos extraídos do próprio material para orientar o próximo retorno ao conteúdo. |
+| Conta | Cadastro, verificação de e-mail, login, logout e recuperação de senha. |
+| Planos | Objetivos de estudo, disciplinas, tópicos e subtópicos. |
+| Biblioteca | PDFs, slides, documentos, textos, anotações e links vinculados ao conteúdo certo. |
+| PDF | Upload, leitura, posição da página, conclusão, resumo local, palavras-chave e pontos de estudo. |
+| Sessões | Timer, pausa, finalização, dificuldade e histórico de tempo estudado. |
+| Prática | Cadastro de questões, tentativas, acertos, erros e explicação da resposta. |
+| Revisões | Agenda automática e manual, pendências, atrasos e histórico de conclusão. |
+| Dashboard | Dados reais da semana, continuar estudando, progresso por disciplina e sessões recentes. |
 
-## Resumo amplo do documento, sem custo de IA
+## Como os dados aparecem
 
-O Organiza lê o PDF no próprio servidor e percorre diferentes partes do documento para que a síntese represente começo, meio e fim do conteúdo. Trechos repetidos, cabeçalhos, avisos de licença e enunciados de questões são reduzidos para destacar o que ajuda na revisão.
+- **Tempo estudado** vem apenas de sessões finalizadas.
+- **Tópicos estudados** consideram tópicos de materiais usados em sessões na semana atual.
+- **Aproveitamento** considera tentativas de questões registradas na semana atual.
+- **Progresso por disciplina** é calculado pelos materiais concluídos sobre os materiais vinculados à disciplina.
+- A plataforma mostra estados vazios quando ainda não há dados, sem usar números de demonstração.
 
-Slides e PDFs digitalizados que não possuem texto selecionável passam por OCR local. O arquivo não é enviado a uma IA nem a um serviço de resumo: o OCR transforma as imagens em texto dentro da plataforma e identifica os tópicos mostrados nos slides. Na primeira leitura por OCR, o servidor baixa e mantém em cache o modelo gratuito de idioma português; o PDF da pessoa permanece no ambiente da plataforma.
+## Arquitetura
 
-Cada trecho da síntese aponta a página de origem. As palavras-chave representam temas presentes no material; elas não afirmam frequência de cobrança em provas anteriores.
+```mermaid
+flowchart LR
+  U[Usuário] --> P[Planos]
+  P --> D[Disciplinas]
+  D --> T[Tópicos]
+  T --> M[Materiais]
+  M --> S[Sessões de estudo]
+  D --> Q[Questões]
+  M --> R[Revisões]
+  S --> DASH[Dashboard]
+  Q --> DASH
+  R --> DASH
+```
 
-## Organização e segurança
+## Tecnologias
 
-- Cada conta visualiza somente os próprios planos e materiais.
-- Todo PDF pertence a uma matéria e a um plano.
-- A exclusão remove o PDF, a síntese, as palavras-chave e os registros de revisão vinculados.
-- O e-mail é confirmado na criação da conta; a recuperação de senha usa links de uso único.
+- Next.js 15 e React 19
+- TypeScript
+- Prisma ORM e PostgreSQL/Neon
+- Tailwind CSS
+- Zod para validação
+- PDF.js e Tesseract.js para processamento local de PDFs
+- Resend para e-mails transacionais
+- Vercel Blob para armazenamento de arquivos em produção
+
+## Configuração local
+
+O projeto requer Node.js 22.13 ou superior, um banco PostgreSQL e um arquivo `.env` local. Nunca publique valores reais de ambiente.
+
+| Variável | Uso |
+| --- | --- |
+| `DATABASE_URL` | Conexão PostgreSQL/Neon. |
+| `AUTH_SECRET` | Assinatura de sessão. |
+| `APP_URL` | URL pública da aplicação, como `http://localhost:3000`. |
+| `RESEND_API_KEY` | Envio de confirmação e recuperação de senha. |
+| `EMAIL_FROM` | Remetente verificado no Resend. |
+| `BLOB_READ_WRITE_TOKEN` | Upload de arquivos na Vercel, quando aplicável. |
+
+Com as variáveis configuradas, os comandos principais são:
+
+```bash
+npm install
+npm run prisma:generate
+npm run prisma:migrate
+npm run dev
+```
+
+## Qualidade e validação
+
+```bash
+npm run lint
+npm run typecheck
+npm run test:pdf
+npm run build
+```
 
 ## Limites atuais
 
-| Item | Regra |
-| --- | --- |
-| Arquivo | PDF de até 4 MB |
-| Documento | Até 800 páginas quando o texto é selecionável |
-| PDF digitalizado ou slides em imagem | Até 80 páginas processadas por OCR em uma análise |
-| Hospedagem | Em produção, os arquivos usam o armazenamento configurado para a plataforma |
+- O processamento de PDF é local e não usa IA paga.
+- PDFs digitalizados e slides podem usar OCR local.
+- As questões são cadastradas manualmente pelo próprio usuário.
+- A pesquisa global e um editor rico de anotações ainda não foram implementados.
 
-## Tecnologia
+## Roadmap
 
-Construído com Next.js, TypeScript, Prisma e PostgreSQL. A leitura usa PDF.js, OCR local com Tesseract.js e não exige uma chave de IA ou cobrança por documento.
+- Pesquisa global em planos, tópicos, materiais, anotações e questões.
+- Editor de anotações mais completo.
+- Leitor de PDF integrado com anotações por página.
+- Repetição espaçada avançada como etapa futura.
 
----
+## Segurança
 
-<div align="center">
-  <sub>organiza · estudar com mais clareza, um material por vez.</sub>
-</div>
+- Segredos são lidos somente por variáveis de ambiente.
+- Cada consulta de dados é associada ao usuário autenticado.
+- Senhas são armazenadas como hash.
+- Tokens de confirmação e redefinição têm uso controlado e expiração.
+- Arquivos de ambiente e uploads locais estão ignorados pelo Git.
