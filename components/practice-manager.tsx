@@ -132,6 +132,24 @@ export function PracticeManager({
     }
   }
 
+  function alternativeStateClass(questionId: string, alternative: string, result?: AnswerResult) {
+    const selected = selectedAnswers[questionId] === alternative;
+
+    if (result && selected && !result.correta) {
+      return "border-rose-400 bg-rose-50";
+    }
+
+    if (result && result.respostaCorreta === alternative) {
+      return "border-emerald-500 bg-emerald-50/60";
+    }
+
+    if (selected) {
+      return "border-emerald-500 bg-emerald-50/60";
+    }
+
+    return "border-stone-200 hover:border-stone-300";
+  }
+
   return (
     <div className="mx-auto max-w-6xl">
       <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
@@ -162,7 +180,7 @@ export function PracticeManager({
       <section className="mt-10"><div className="flex items-center gap-2"><ClipboardCheck className="h-5 w-5 text-emerald-800" /><h2 className="text-2xl font-semibold text-stone-950">Praticar</h2></div>
         {!questions.length ? <div className="mt-5 rounded-3xl border border-dashed border-stone-300 bg-white/60 p-10 text-center"><ClipboardCheck className="mx-auto h-7 w-7 text-stone-400" /><h3 className="mt-3 font-semibold text-stone-950">Nenhuma questão cadastrada</h3><p className="mt-2 text-sm text-stone-600">Comece registrando uma questão da sua matéria para praticar aqui.</p></div> : <div className="mt-5 space-y-5">{questions.map((question) => {
           const result = results[question.id];
-          return <article key={question.id} className="rounded-3xl border border-stone-200 bg-white p-5 sm:p-7"><div className="flex flex-wrap items-start justify-between gap-3"><div className="flex flex-wrap gap-2"><span className="badge">{question.materia.titulo}</span>{question.topico && <span className="badge">{question.topico.titulo}</span>}<span className="badge">{difficultyLabel(question.dificuldade)}</span></div><button type="button" onClick={() => removeQuestion(question)} disabled={Boolean(pending)} className="rounded-lg p-2 text-stone-400 hover:bg-rose-50 hover:text-rose-700" aria-label="Excluir questão"><Trash2 className="h-4 w-4" /></button></div><p className="mt-5 whitespace-pre-wrap text-base leading-7 text-stone-900">{question.enunciado}</p><div className="mt-5 grid gap-3">{question.alternativas.map((alternative, index) => <label key={alternative} className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition ${selectedAnswers[question.id] === alternative ? "border-emerald-500 bg-emerald-50/60" : "border-stone-200 hover:border-stone-300"}`}><input type="radio" name={`question-${question.id}`} checked={selectedAnswers[question.id] === alternative} onChange={() => setSelectedAnswers((current) => ({ ...current, [question.id]: alternative }))} className="mt-1" /><span><strong className="mr-2 text-emerald-800">{labels[index]}.</strong>{alternative}</span></label>)}</div><div className="mt-5 flex flex-wrap items-center gap-3"><button type="button" onClick={() => answer(question)} disabled={Boolean(pending)} className="btn-primary">{pending === question.id && <Loader2 className="h-4 w-4 animate-spin" />} Responder</button><span className="text-xs text-stone-500">{question._count.tentativas} {question._count.tentativas === 1 ? "tentativa" : "tentativas"}</span>{question.tentativas[0] && <span className="text-xs text-stone-500">Última: {question.tentativas[0].correta ? "acertou" : "errou"} em {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(question.tentativas[0].respondidaEm))}</span>}</div>{result && <div className={`mt-5 rounded-2xl p-4 ${result.correta ? "bg-emerald-50 text-emerald-950" : "bg-amber-50 text-amber-950"}`}><p className="flex items-center gap-2 font-semibold">{result.correta ? <CheckCircle2 className="h-4 w-4" /> : <CircleAlert className="h-4 w-4" />}{result.correta ? "Você acertou." : `Resposta correta: ${result.respostaCorreta}`}</p>{result.explicacao && <p className="mt-2 text-sm leading-6">{result.explicacao}</p>}</div>}</article>;
+          return <article key={question.id} className="rounded-3xl border border-stone-200 bg-white p-5 sm:p-7"><div className="flex flex-wrap items-start justify-between gap-3"><div className="flex flex-wrap gap-2"><span className="badge">{question.materia.titulo}</span>{question.topico && <span className="badge">{question.topico.titulo}</span>}<span className="badge">{difficultyLabel(question.dificuldade)}</span></div><button type="button" onClick={() => removeQuestion(question)} disabled={Boolean(pending)} className="rounded-lg p-2 text-stone-400 hover:bg-rose-50 hover:text-rose-700" aria-label="Excluir questão"><Trash2 className="h-4 w-4" /></button></div><p className="mt-5 whitespace-pre-wrap text-base leading-7 text-stone-900">{question.enunciado}</p><div className="mt-5 grid gap-3">{question.alternativas.map((alternative, index) => <label key={alternative} className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition ${alternativeStateClass(question.id, alternative, result)}`}><input type="radio" name={`question-${question.id}`} checked={selectedAnswers[question.id] === alternative} onChange={() => setSelectedAnswers((current) => ({ ...current, [question.id]: alternative }))} className="mt-1" /><span><strong className="mr-2 text-emerald-800">{labels[index]}.</strong>{alternative}</span></label>)}</div><div className="mt-5 flex flex-wrap items-center gap-3"><button type="button" onClick={() => answer(question)} disabled={Boolean(pending)} className="btn-primary">{pending === question.id && <Loader2 className="h-4 w-4 animate-spin" />} Responder</button><span className="text-xs text-stone-500">{question._count.tentativas} {question._count.tentativas === 1 ? "tentativa" : "tentativas"}</span>{question.tentativas[0] && <span className="text-xs text-stone-500">Última: {question.tentativas[0].correta ? "acertou" : "errou"} em {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(question.tentativas[0].respondidaEm))}</span>}</div>{result && <div className={`mt-5 rounded-2xl p-4 ${result.correta ? "bg-emerald-50 text-emerald-950" : "bg-amber-50 text-amber-950"}`}><p className="flex items-center gap-2 font-semibold">{result.correta ? <CheckCircle2 className="h-4 w-4" /> : <CircleAlert className="h-4 w-4" />}{result.correta ? "Você acertou." : `Resposta correta: ${result.respostaCorreta}`}</p>{result.explicacao && <p className="mt-2 text-sm leading-6">{result.explicacao}</p>}</div>}</article>;
         })}</div>}
       </section>
     </div>
