@@ -47,6 +47,7 @@ export function MaterialStudyActions({
   const [finishing, setFinishing] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>("MEDIO");
   const [page, setPage] = useState(material.paginaAtual?.toString() ?? "");
+  const [savedPage, setSavedPage] = useState(material.paginaAtual);
 
   useEffect(() => {
     if (!session || paused) return;
@@ -111,6 +112,7 @@ export function MaterialStudyActions({
         body: JSON.stringify({ paginaAtual: Number(page) }),
       });
       notify("success", result.message ?? "Progresso salvo.");
+      setSavedPage(Number(page));
       router.refresh();
     } catch (error) {
       notify("error", error instanceof Error ? error.message : "Não foi possível salvar o progresso.");
@@ -185,7 +187,7 @@ export function MaterialStudyActions({
         {material.paginas && (
           <form onSubmit={saveProgress} className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <label className="flex-1 text-sm font-semibold text-stone-700">
-              Página atual <span className="font-normal text-stone-500">de {material.paginas}</span>
+              Página atual <span className="font-normal text-stone-500">{savedPage ?? "não informada"} de {material.paginas}</span>
               <input value={page} onChange={(event) => setPage(event.target.value.replace(/\D/g, ""))} inputMode="numeric" className="mt-1.5" placeholder="Ex.: 34" />
             </label>
             <button disabled={pending || !page} className="btn-secondary text-sm">Salvar página</button>
