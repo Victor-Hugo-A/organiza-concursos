@@ -15,6 +15,7 @@ import {
   ArrowRight,
   BookOpen,
   CheckCircle2,
+  ChevronDown,
   FileText,
   FolderUp,
   Link2,
@@ -126,6 +127,7 @@ export function MaterialsManager({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [subjectError, setSubjectError] = useState("");
+  const [savedPages, setSavedPages] = useState<Record<string, number>>({});
   const plan = plans.find((item) => item.id === selectedPlan);
   const subject = plan?.materias.find((item) => item.id === selectedSubject);
   const busy = pending || Boolean(analyzingId);
@@ -774,7 +776,7 @@ export function MaterialsManager({
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {material.urlArquivo && ["PDF", "SLIDE", "DOCUMENTO"].includes(material.tipo) && <PdfReader id={material.id} title={material.titulo} url={material.urlArquivo} pages={material.paginas} currentPage={material.paginaAtual} />}
+                      {material.urlArquivo && ["PDF", "SLIDE", "DOCUMENTO"].includes(material.tipo) && <PdfReader id={material.id} title={material.titulo} url={material.urlArquivo} pages={material.paginas} currentPage={savedPages[material.id] ?? material.paginaAtual} onProgressSaved={(page) => setSavedPages((current) => ({ ...current, [material.id]: page }))} />}
                       {(material.urlArquivo || material.urlExterna) && (
                         <a
                           href={
@@ -807,12 +809,19 @@ export function MaterialsManager({
                       </button>
                     </div>
                   </div>
+                  <details className="group mt-5 border-t border-stone-100 pt-4">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-semibold text-stone-800 transition hover:border-emerald-200 hover:bg-emerald-50 [&::-webkit-details-marker]:hidden">
+                      <span className="group-open:hidden">Expandir material</span>
+                      <span className="hidden group-open:inline">Recolher material</span>
+                      <ChevronDown className="h-4 w-4 text-emerald-800 transition-transform group-open:rotate-180" />
+                    </summary>
                   <MaterialStudyActions
+                    onProgressSaved={(page) => setSavedPages((current) => ({ ...current, [material.id]: page }))}
                     material={{
                       id: material.id,
                       titulo: material.titulo,
                       paginas: material.paginas,
-                      paginaAtual: material.paginaAtual,
+                      paginaAtual: savedPages[material.id] ?? material.paginaAtual,
                       concluidoEm: material.concluidoEm,
                       activeSession: material.sessoesEstudo[0] ?? null,
                     }}
@@ -938,6 +947,7 @@ export function MaterialsManager({
                       documento, sem medir a frequência em provas.
                     </p>
                   )}
+                  </details>
                 </article>
               ))}
             </div>
