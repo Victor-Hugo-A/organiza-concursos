@@ -128,6 +128,7 @@ export function MaterialsManager({
   const [error, setError] = useState("");
   const [subjectError, setSubjectError] = useState("");
   const [savedPages, setSavedPages] = useState<Record<string, number>>({});
+  const [subjectsModalPlan, setSubjectsModalPlan] = useState<Plan | null>(null);
   const plan = plans.find((item) => item.id === selectedPlan);
   const subject = plan?.materias.find((item) => item.id === selectedSubject);
   const busy = pending || Boolean(analyzingId);
@@ -434,8 +435,9 @@ export function MaterialsManager({
                     </span>
                   </div>
                   {item.materias.length ? (
+                    <>
                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                      {item.materias.map((materia) => (
+                      {item.materias.slice(0, 0).map((materia) => (
                         <Link
                           key={materia.id}
                           href={`/app/materiais?plano=${item.id}&materia=${materia.id}`}
@@ -459,6 +461,8 @@ export function MaterialsManager({
                         </Link>
                       ))}
                     </div>
+                    <button type="button" onClick={() => setSubjectsModalPlan(item)} className="mt-4 flex w-full items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 text-left transition hover:border-emerald-400 hover:bg-emerald-50"><span><span className="block font-semibold text-stone-950">Escolher matéria para estudar</span><span className="mt-1 block text-sm text-stone-600">Veja os materiais organizados em cada uma das {item.materias.length} matérias.</span></span><ArrowRight className="h-5 w-5 shrink-0 text-emerald-800" /></button>
+                    </>
                   ) : (
                     <p className="mt-4 rounded-2xl bg-stone-50 p-5 text-sm leading-6 text-stone-600">
                       Comece criando uma matéria, como Matemática ou Língua
@@ -967,6 +971,7 @@ export function MaterialsManager({
         onCancel={() => setDeleteTarget(null)}
         onConfirm={removeMaterial}
       />
+      {subjectsModalPlan && <div className="fixed inset-0 z-50 grid place-items-center bg-stone-950/35 p-4"><section role="dialog" aria-modal="true" aria-label="Todas as matérias" className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl"><div className="flex items-start justify-between gap-4"><div><p className="text-sm font-semibold text-emerald-800">{subjectsModalPlan.titulo}</p><h2 className="mt-1 text-xl font-semibold text-stone-950">Escolha uma matéria</h2></div><button type="button" onClick={() => setSubjectsModalPlan(null)} className="btn-secondary text-sm">Fechar</button></div><div className="mt-5 grid max-h-[60vh] gap-3 overflow-y-auto sm:grid-cols-2">{subjectsModalPlan.materias.map((materia) => { const materialCount = initialMaterials.filter((material) => material.materiaId === materia.id).length; return <Link key={materia.id} href={`/app/materiais?plano=${subjectsModalPlan.id}&materia=${materia.id}`} onClick={() => setSubjectsModalPlan(null)} className="rounded-2xl border border-stone-200 p-4 font-semibold text-stone-900 transition hover:border-emerald-300 hover:bg-emerald-50">{materia.titulo}<span className="mt-1 block text-xs font-normal text-stone-500">{materialCount} {materialCount === 1 ? "material organizado" : "materiais organizados"}</span></Link>})}</div></section></div>}
     </div>
   );
 }
