@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getCurrentUser();
   if (!user) return Response.json({ message: "Entre na sua conta para exportar seus dados." }, { status: 401 });
   const [plans, materials, notes, questions, attempts, reviews, sessions] = await Promise.all([
@@ -24,6 +24,9 @@ export async function GET() {
     ...reviews.map((review) => ["Revisão", review.titulo, review.status, review.criadoEm, review.concluidaEm ?? ""]),
     ...attempts.map((attempt) => ["Tentativa", attempt.correta ? "Resposta correta" : "Resposta incorreta", attempt.respostaEscolhida, attempt.respondidaEm, ""]),
   ];
-  const csv = `\uFEFF${rows.map((row) => row.map(escape).join(";")).join("\n")}`;
-  return new Response(csv, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="organiza-meus-estudos-${new Date().toISOString().slice(0, 10)}.csv"` } });
+  const type = new URL(request.url).searchParams.get("tipo");
+  const selectedRows = type ? [rows[0], ...rows.slice(1).filter((row) => String(row[0]).toLowerCase().includes(type.toLowerCase()))] : rows;
+  const csv = `\uFEFF${selectedRows.map((row) => row.map(escape).join(";")).join("\n")}`;
+  const file = type ? `organiza-${type}-${new Date().toISOString().slice(0, 10)}` : `organiza-meus-estudos-${new Date().toISOString().slice(0, 10)}`;
+  return new Response(csv, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="${file}.csv"` } });
 }
