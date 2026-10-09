@@ -723,7 +723,7 @@ export function MaterialsManager({
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Buscar na biblioteca"
-                    className="pl-10"
+                    className="!pl-10"
                   />
                 </label>
                 <select
@@ -774,7 +774,7 @@ export function MaterialsManager({
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {material.tipo === "PDF" && material.urlArquivo && <PdfReader id={material.id} title={material.titulo} url={material.urlArquivo} pages={material.paginas} currentPage={material.paginaAtual} />}
+                      {material.urlArquivo && ["PDF", "SLIDE", "DOCUMENTO"].includes(material.tipo) && <PdfReader id={material.id} title={material.titulo} url={material.urlArquivo} pages={material.paginas} currentPage={material.paginaAtual} />}
                       {(material.urlArquivo || material.urlExterna) && (
                         <a
                           href={
