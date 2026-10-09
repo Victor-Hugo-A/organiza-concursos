@@ -5,7 +5,8 @@ import { created, fail, handleApiError } from "@/lib/api-response";
 
 const schema = z.object({
   titulo: z.string().trim().min(2).max(100),
-  tipo: z.enum(["ENEM", "PAS", "CONCURSO_PUBLICO", "VESTIBULAR", "OUTRO"])
+  tipo: z.enum(["ENEM", "PAS", "CONCURSO_PUBLICO", "VESTIBULAR", "OUTRO"]),
+  icone: z.enum(["AUTO", "EDUCACAO", "BANCO", "INSTITUICAO", "DIREITO", "ALVO"]).default("AUTO")
 });
 
 export async function POST(request: Request) {

@@ -105,6 +105,7 @@ model PlanoEstudo {
   tipo        PlanoTipo       @default(OUTRO)
   descricao   String?
   cor         String          @default("#166534")
+  icone       String          @default("AUTO")
   arquivado   Boolean         @default(false)
   criadoEm    DateTime        @default(now())
   atualizadoEm DateTime       @updatedAt

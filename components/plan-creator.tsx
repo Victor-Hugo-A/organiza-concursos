@@ -73,7 +73,7 @@ export function PlanCreator() {
       const response = await fetch("/api/plans", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ titulo: form.get("titulo"), tipo: form.get("tipo") }),
+        body: JSON.stringify({ titulo: form.get("titulo"), tipo: form.get("tipo"), icone: form.get("icone") }),
       });
       const result = (await response.json().catch(() => null)) as CreatePlanResponse | null;
       if (!response.ok || !result?.data?.id) {
@@ -162,6 +162,17 @@ export function PlanCreator() {
                 <option value="CONCURSO_PUBLICO">Concurso público</option>
                 <option value="VESTIBULAR">Vestibular</option>
                 <option value="OUTRO">Outro</option>
+              </select>
+            </label>
+            <label>
+              Ícone do plano
+              <select name="icone" className="mt-1.5">
+                <option value="AUTO">Escolher automaticamente</option>
+                <option value="EDUCACAO">Educação</option>
+                <option value="BANCO">Banco</option>
+                <option value="INSTITUICAO">Instituição</option>
+                <option value="DIREITO">Direito</option>
+                <option value="ALVO">Objetivo geral</option>
               </select>
             </label>
             <button disabled={pending} className="btn-primary mt-2">
