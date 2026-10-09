@@ -31,6 +31,7 @@ import { TopicManager } from "@/components/topic-manager";
 import { LibraryMaterialCreator } from "@/components/library-material-creator";
 import { useToast } from "@/components/toast-provider";
 import { MaterialStudyActions } from "@/components/material-study-actions";
+import { PdfReader } from "@/components/pdf-reader";
 import { DeleteMaterialDialog } from "@/components/delete-material-dialog";
 
 type Plan = {
@@ -773,6 +774,7 @@ export function MaterialsManager({
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
+                      {material.tipo === "PDF" && material.urlArquivo && <PdfReader id={material.id} title={material.titulo} url={material.urlArquivo} pages={material.paginas} currentPage={material.paginaAtual} />}
                       {(material.urlArquivo || material.urlExterna) && (
                         <a
                           href={
