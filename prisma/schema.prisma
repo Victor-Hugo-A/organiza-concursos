@@ -57,6 +57,7 @@ model Usuario {
   questoes           QuestaoEstudo[]
   tentativasQuestoes TentativaQuestao[]
   anotacoes          AnotacaoEstudo[]
+  metaSemanal        MetaSemanal?
 
   @@map("User")
 }
@@ -205,6 +206,15 @@ model SessaoEstudo {
   @@index([materialId, iniciadaEm])
   @@index([usuarioId, finalizadaEm])
   @@map("SessaoEstudoOrganiza")
+}
+
+model MetaSemanal {
+  id              String   @id @default(cuid())
+  usuarioId       String   @unique
+  minutosEstudo   Int      @default(0)
+  questoes        Int      @default(0)
+  atualizadoEm    DateTime @updatedAt
+  usuario         Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 }
 
 model AnotacaoEstudo {
