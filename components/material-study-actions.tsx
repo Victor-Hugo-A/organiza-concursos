@@ -24,6 +24,7 @@ async function requestJson(url: string, options: RequestInit) {
 
 export function MaterialStudyActions({
   material,
+  onProgressSaved,
 }: {
   material: {
     id: string;
@@ -33,6 +34,7 @@ export function MaterialStudyActions({
     concluidoEm: string | null;
     activeSession: ActiveSession | null;
   };
+  onProgressSaved?: (page: number) => void;
 }) {
   const router = useRouter();
   const { notify } = useToast();
@@ -113,6 +115,7 @@ export function MaterialStudyActions({
       });
       notify("success", result.message ?? "Progresso salvo.");
       setSavedPage(Number(page));
+      onProgressSaved?.(Number(page));
       router.refresh();
     } catch (error) {
       notify("error", error instanceof Error ? error.message : "Não foi possível salvar o progresso.");
