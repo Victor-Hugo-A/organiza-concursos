@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, Sparkles } from "lucide-react";
+import { Check, Clock3, Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/components/toast-provider";
 
 async function post(url: string) {
@@ -86,4 +86,10 @@ export function PrepareReviewsButton() {
       {error && <p role="alert" className="mt-3 text-sm text-rose-700">{error}</p>}
     </div>
   );
+}
+
+export function PostponeReviewButton({ reviewId }: { reviewId: string }) {
+  const router = useRouter(); const { notify } = useToast(); const [pending, setPending] = useState(false);
+  async function postpone() { setPending(true); try { const result = await post(`/api/reviews/${reviewId}/postpone`); notify("warning", result.message ?? "Revisão adiada."); router.refresh(); } catch (error) { notify("error", error instanceof Error ? error.message : "Não foi possível adiar a revisão."); } finally { setPending(false); } }
+  return <button type="button" onClick={postpone} disabled={pending} className="btn-secondary min-h-10 px-3 text-xs">{pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock3 className="h-4 w-4" />} Adiar</button>;
 }

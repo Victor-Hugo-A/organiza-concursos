@@ -7,7 +7,7 @@ import {
   Clock3,
   RotateCcw,
 } from "lucide-react";
-import { CompleteReviewButton, PrepareReviewsButton } from "@/components/review-actions";
+import { CompleteReviewButton, PostponeReviewButton, PrepareReviewsButton } from "@/components/review-actions";
 import { ManualReviewScheduler } from "@/components/manual-review-scheduler";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -138,7 +138,7 @@ export default async function ReviewsPage() {
                       {late ? "Disponível para revisar desde " : "Agendada para "}{formatter.format(review.agendadaPara)}
                     </p>
                   </div>
-                  <CompleteReviewButton reviewId={review.id} />
+                  <div className="flex shrink-0 flex-wrap gap-2"><PostponeReviewButton reviewId={review.id} /><CompleteReviewButton reviewId={review.id} /></div>
                 </article>
               );
             })}
