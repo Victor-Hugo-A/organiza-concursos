@@ -1,0 +1,3 @@
+import { z } from "zod"; import { getCurrentUser } from "@/lib/auth"; import { fail, handleApiError, ok } from "@/lib/api-response"; import { prisma } from "@/lib/prisma";
+const schema=z.object({minutosEstudo:z.number().int().min(0).max(10080),questoes:z.number().int().min(0).max(10000)});
+export async function PUT(request:Request){try{const user=await getCurrentUser();if(!user)return fail("Entre na sua conta para definir metas.",401);const input=schema.parse(await request.json());const goal=await prisma.metaSemanal.upsert({where:{usuarioId:user.id},update:input,create:{usuarioId:user.id,...input}});return ok(goal,"Metas semanais atualizadas.")}catch(error){return handleApiError(error)}}
