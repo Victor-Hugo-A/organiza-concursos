@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BarChart3, CalendarCheck2, CalendarClock, CheckCircle2, Clock3, History, PlayCircle, Plus, Target } from "lucide-react";
+import { ArrowRight, BarChart3, CalendarCheck2, CalendarClock, CheckCircle2, Clock3, History, ListChecks, PlayCircle, Plus, Target } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
     prisma.materialEstudo.findFirst({ where: { usuarioId: user.id }, orderBy: [{ ultimoAcessoEm: { sort: "desc", nulls: "last" } }, { criadoEm: "desc" }], select: { id: true, titulo: true, planoId: true, materiaId: true, paginas: true, paginaAtual: true, concluidoEm: true, materia: { select: { titulo: true } }, topico: { select: { titulo: true } } } }),
     prisma.sessaoEstudo.findMany({ where: { usuarioId: user.id, finalizadaEm: { gte: start }, duracaoSegundos: { not: null } }, select: { duracaoSegundos: true, material: { select: { topicoId: true } } } }),
     prisma.sessaoEstudo.findMany({ where: { usuarioId: user.id, finalizadaEm: { not: null }, duracaoSegundos: { not: null } }, orderBy: { finalizadaEm: "desc" }, take: 5, select: { id: true, finalizadaEm: true, duracaoSegundos: true, material: { select: { id: true, titulo: true, planoId: true, materiaId: true, materia: { select: { titulo: true } } } } } }),
-    prisma.revisao.findMany({ where: { material: { usuarioId: user.id }, status: "PENDENTE", agendadaPara: { lte: todayEnd } }, orderBy: { agendadaPara: "asc" }, take: 4, select: { id: true, titulo: true, agendadaPara: true, material: { select: { titulo: true, materia: { select: { titulo: true } } } } } }),
+    prisma.revisao.findMany({ where: { material: { usuarioId: user.id }, status: "PENDENTE", agendadaPara: { lte: todayEnd } }, orderBy: { agendadaPara: "asc" }, take: 4, select: { id: true, titulo: true, agendadaPara: true, material: { select: { id: true, planoId: true, materiaId: true, titulo: true, materia: { select: { titulo: true } } } } } }),
     prisma.materiaEstudo.findMany({ where: { plano: { usuarioId: user.id, arquivado: false }, materiais: { some: {} } }, orderBy: { titulo: "asc" }, select: { id: true, titulo: true, plano: { select: { titulo: true } }, materiais: { select: { concluidoEm: true } } } }),
     prisma.tentativaQuestao.count({ where: { usuarioId: user.id, respondidaEm: { gte: start } } }),
     prisma.tentativaQuestao.count({ where: { usuarioId: user.id, correta: true, respondidaEm: { gte: start } } }),
@@ -45,12 +45,37 @@ export default async function DashboardPage() {
   const formatter = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
   const firstName = user.nome.trim().split(/\s+/)[0];
   const totalMaterials = plans.reduce((total, plan) => total + plan._count.materiais, 0);
+  const todayTasks = reviews.slice(0, 2).map((review) => ({
+    id: review.id,
+    href: "/app/revisoes",
+    type: "Revisar",
+    title: review.titulo,
+    detail: review.material.materia?.titulo ?? review.material.titulo,
+    late: review.agendadaPara < now,
+  }));
+  if (todayTasks.length < 2 && latestMaterial && !latestMaterial.concluidoEm && !reviews.some((review) => review.material.id === latestMaterial.id)) {
+    todayTasks.push({
+      id: latestMaterial.id,
+      href: materialHref(latestMaterial),
+      type: "Continuar",
+      title: latestMaterial.titulo,
+      detail: latestMaterial.materia?.titulo ?? "Material de estudo",
+      late: false,
+    });
+  }
 
   return <div className="mx-auto max-w-6xl">
     <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="text-sm font-semibold text-emerald-800">Visão geral</p><h1 className="mt-1 text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl">Olá, {firstName}.</h1><p className="mt-2 text-stone-600">Seu panorama de estudo, sempre baseado nos seus registros.</p></div><Link href="/app/materiais" className="btn-primary"><Plus className="h-4 w-4" /> Adicionar material</Link></div>
 
     <section className="mt-8 rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-7"><div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center"><div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-emerald-800"><PlayCircle className="h-5 w-5" /></span><div><p className="text-sm font-semibold text-emerald-800">Continuar estudando</p><h2 className="mt-1 text-xl font-semibold text-stone-950 sm:text-2xl">{latestMaterial?.titulo ?? "Nenhum material em andamento"}</h2>{latestMaterial ? <p className="mt-2 text-sm text-stone-600">{[latestMaterial.materia?.titulo, latestMaterial.topico?.titulo].filter(Boolean).join(" · ") || "Material de estudo"}{latestMaterial.paginas && latestMaterial.paginaAtual ? ` · Página ${latestMaterial.paginaAtual} de ${latestMaterial.paginas}` : ""}{latestMaterial.concluidoEm ? " · Concluído" : ""}</p> : <p className="mt-2 text-sm text-stone-600">Adicione um material à biblioteca para começar.</p>}</div></div>{latestMaterial ? <Link href={materialHref(latestMaterial)} className="btn-primary shrink-0"><PlayCircle className="h-4 w-4" /> Continuar</Link> : <Link href="/app/materiais" className="btn-secondary shrink-0">Abrir biblioteca</Link>}</div></section>
 
+    <section className="mt-8 rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+        <div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-emerald-800"><ListChecks className="h-5 w-5" /></span><div><p className="text-sm font-semibold text-emerald-800">Foco de hoje</p><h2 className="mt-1 text-xl font-semibold text-stone-950">Seu roteiro possível</h2></div></div>
+        <p className="text-sm text-stone-500">Até duas prioridades para manter o ritmo.</p>
+      </div>
+      {todayTasks.length ? <div className="mt-5 grid gap-3 lg:grid-cols-2">{todayTasks.map((task, index) => <Link key={task.id} href={task.href} className="group flex min-w-0 items-center gap-4 rounded-2xl border border-stone-200 p-4 transition hover:border-emerald-300 hover:bg-emerald-50/30"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-stone-100 text-sm font-bold text-stone-700">{index + 1}</span><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${task.late ? "bg-amber-100 text-amber-900" : "bg-emerald-50 text-emerald-800"}`}>{task.type}</span>{task.late && <span className="text-xs font-semibold text-amber-800">em atraso</span>}</div><h3 className="mt-2 truncate font-semibold text-stone-950 group-hover:text-emerald-900">{task.title}</h3><p className="mt-1 truncate text-sm text-stone-500">{task.detail}</p></div><ArrowRight className="h-4 w-4 shrink-0 text-emerald-800" /></Link>)}</div> : <div className="mt-5 rounded-2xl border border-dashed border-stone-300 bg-stone-50/70 p-5"><p className="font-semibold text-stone-950">Seu dia está livre.</p><p className="mt-1 text-sm text-stone-600">Adicione um material para montar seu próximo ponto de estudo.</p><Link href="/app/materiais" className="mt-3 inline-flex text-sm font-semibold text-emerald-800">Abrir biblioteca <ArrowRight className="ml-1 h-4 w-4" /></Link></div>}
+    </section>
     <section className="mt-8"><div className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-emerald-800" /><div><p className="text-sm font-bold uppercase tracking-wider text-stone-400">Acompanhamento</p><h2 className="text-2xl font-semibold text-stone-950">Estudos da semana</h2></div></div><div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Stat icon={<Clock3 />} value={seconds ? duration(seconds) : "—"} label="tempo estudado" accent /><Stat icon={<Target />} value={String(topics)} label="tópicos estudados" /><Stat icon={<CheckCircle2 />} value={String(practicedQuestions.length)} label="questões praticadas" /><Stat icon={<BarChart3 />} value={accuracy === null ? "—" : `${accuracy}%`} label="de aproveitamento" /></div></section>
 
     <section className="mt-10 grid gap-6 lg:grid-cols-5"><div className="lg:col-span-3"><Title eyebrow="Progresso real" title="Por disciplina" href="/app/planos" label="Meus planos" />{subjects.length ? <div className="mt-5 space-y-3">{subjects.map((subject) => { const done = subject.materiais.filter((material) => material.concluidoEm).length; const percent = Math.round(done / subject.materiais.length * 100); return <article key={subject.id} className="rounded-2xl border border-stone-200 bg-white p-4"><div className="flex justify-between gap-4"><div><h3 className="font-semibold text-stone-950">{subject.titulo}</h3><p className="mt-1 text-xs text-stone-500">{subject.plano.titulo} · {done} de {subject.materiais.length} concluídos</p></div><strong className="text-emerald-800">{percent}%</strong></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-stone-100"><div className="h-full rounded-full bg-emerald-700" style={{ width: `${percent}%` }} /></div></article>; })}</div> : <Empty icon={<Target />} text="O progresso aparece quando uma disciplina tiver materiais vinculados." href="/app/planos" label="Organizar disciplinas" />}</div>
