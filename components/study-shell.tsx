@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   Bell,
   BellRing,
+  BarChart3,
   BookOpenCheck,
   ClipboardCheck,
   CalendarClock,
@@ -30,6 +31,7 @@ const items = [
   { href: "/app/materiais", label: "Minha Biblioteca", icon: FileText },
   { href: "/app/busca", label: "Pesquisar", icon: Search },
   { href: "/app/anotacoes", label: "Anotações", icon: StickyNote },
+  { href: "/app/relatorios", label: "Relatórios", icon: BarChart3 },
   { href: "/app/pratica", label: "Prática", icon: ClipboardCheck },
   { href: "/app/revisoes", label: "Revisões", icon: CalendarClock },
 ];
@@ -40,6 +42,7 @@ const titles: Record<string, string> = {
   "/app/materiais": "Minha Biblioteca",
   "/app/busca": "Pesquisar",
   "/app/anotacoes": "Anotações",
+  "/app/relatorios": "Relatórios",
   "/app/pratica": "Prática",
   "/app/revisoes": "Revisões",
 };
