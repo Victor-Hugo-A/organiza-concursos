@@ -234,7 +234,7 @@ export function StudyShell({
           </div>
         </header>
 
-        <main className="flex-1 px-5 py-6 lg:px-10 lg:py-7">
+        <main id="conteudo-principal" className="flex-1 px-5 py-6 lg:px-10 lg:py-7">
           {pathname !== "/app" && pathname !== "/app/materiais" && (
             <div className="mx-auto mb-5 max-w-6xl">
               <BackLink href="/app">Voltar à visão geral</BackLink>

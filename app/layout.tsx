@@ -23,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
+        <a href="#conteudo-principal" className="skip-link">Pular para o conteúdo principal</a>
         <ToastProvider>
           <PublicHeader />
           <div className="flex min-h-0 flex-1 flex-col">{children}</div>

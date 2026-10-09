@@ -3,6 +3,8 @@
 @tailwind utilities;
 
 :root { color-scheme: light; }
+.skip-link { @apply sr-only fixed left-4 top-4 z-[100] rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white; }
+.skip-link:focus { @apply not-sr-only outline-none ring-4 ring-emerald-200; }
 html { scroll-behavior: smooth; }
 @keyframes toast-progress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 .toast-progress { animation: toast-progress 4s linear forwards; transform-origin: left; }
