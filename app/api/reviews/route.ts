@@ -42,16 +42,27 @@ export async function POST(request: Request) {
     dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(date);
     dayEnd.setHours(23, 59, 59, 999);
-    const duplicate = await prisma.revisao.findFirst({
-      where: {
-        materialId: material.id,
-        status: "PENDENTE",
-        agendadaPara: { gte: dayStart, lte: dayEnd },
-      },
-      select: { id: true },
-    });
+    const [duplicate, scheduledCount] = await Promise.all([
+      prisma.revisao.findFirst({
+        where: {
+          materialId: material.id,
+          status: "PENDENTE",
+          agendadaPara: { gte: dayStart, lte: dayEnd },
+        },
+        select: { id: true },
+      }),
+      prisma.revisao.count({
+        where: {
+          status: "PENDENTE",
+          agendadaPara: { gte: dayStart, lte: dayEnd },
+          material: { usuarioId: user.id },
+        },
+      }),
+    ]);
     if (duplicate)
       return fail("Este material já possui uma revisão pendente nessa data.", 409);
+    if (scheduledCount >= 2)
+      return fail("Esta data já possui duas revisões. Escolha outro dia para manter sua agenda possível.", 409);
 
     const review = await prisma.revisao.create({
       data: {

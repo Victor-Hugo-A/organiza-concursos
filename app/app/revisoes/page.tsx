@@ -7,7 +7,8 @@ import {
   Clock3,
   RotateCcw,
 } from "lucide-react";
-import { CompleteReviewButton, PostponeReviewButton, PrepareReviewsButton } from "@/components/review-actions";
+import { PrepareReviewsButton } from "@/components/review-actions";
+import { ReviewAgenda } from "@/components/review-agenda";
 import { ManualReviewScheduler } from "@/components/manual-review-scheduler";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -120,29 +121,7 @@ export default async function ReviewsPage() {
             <PrepareReviewsButton />
           </div>
         ) : (
-          <div className="mt-5 overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
-            {reviews.map((review, index) => {
-              const late = review.agendadaPara < new Date();
-              return (
-                <article key={review.id} className="flex flex-col gap-4 border-b border-stone-100 p-5 last:border-0 sm:flex-row sm:items-center">
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-emerald-50 text-sm font-bold text-emerald-800">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-stone-950">{review.titulo}</h3>
-                    {review.origem === "MANUAL" && <span className="mt-2 inline-flex rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-800">Agendada manualmente</span>}
-                    <p className="mt-0.5 truncate text-sm text-stone-500">
-                      {review.material.titulo}{review.material.materia ? ` · ${review.material.materia.titulo}` : ""}
-                    </p>
-                    <p className={`mt-2 text-xs font-semibold ${late ? "text-amber-800" : "text-stone-500"}`}>
-                      {late ? "Disponível para revisar desde " : "Agendada para "}{formatter.format(review.agendadaPara)}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 flex-wrap gap-2"><PostponeReviewButton reviewId={review.id} /><CompleteReviewButton reviewId={review.id} /></div>
-                </article>
-              );
-            })}
-          </div>
+          <ReviewAgenda reviews={reviews} />
         )}
       </section>
 
