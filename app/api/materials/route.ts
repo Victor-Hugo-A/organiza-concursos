@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       const blob = await put(
         `materiais/${user.id}/${randomUUID()}-${cleanName}`,
         file,
-        { access: "public" },
+        { access: "private", addRandomSuffix: false, contentType: "application/pdf" },
       );
       urlArquivo = blob.url;
       cleanup = () => del(blob.url);

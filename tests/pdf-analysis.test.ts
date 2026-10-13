@@ -219,6 +219,12 @@ test("leitura bloqueia caminhos de outra conta e hosts externos", async () => {
     ),
   );
   await assert.rejects(
+    readMaterialPdf(
+      "https://example.blob.vercel-storage.com/materiais/user-b/a.pdf",
+      "user-a",
+    ),
+  );
+  await assert.rejects(
     readMaterialPdf("/uploads/user-a/../user-b/a.pdf", "user-a"),
   );
   await assert.rejects(

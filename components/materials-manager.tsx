@@ -553,7 +553,7 @@ export function MaterialsManager({
                 {legacy.map((material) => (
                   <div key={material.id} className="rounded-2xl bg-white p-4">
                     <a
-                      href={material.urlArquivo ?? material.urlExterna ?? "#"}
+                      href={material.urlArquivo ? `/api/materials/${material.id}/file` : material.urlExterna ?? "#"}
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center gap-2 font-semibold text-stone-900"
@@ -780,12 +780,12 @@ export function MaterialsManager({
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {material.urlArquivo && ["PDF", "SLIDE", "DOCUMENTO"].includes(material.tipo) && <PdfReader id={material.id} title={material.titulo} url={material.urlArquivo} pages={material.paginas} currentPage={savedPages[material.id] ?? material.paginaAtual} onProgressSaved={(page) => setSavedPages((current) => ({ ...current, [material.id]: page }))} />}
+                      {material.urlArquivo && ["PDF", "SLIDE", "DOCUMENTO"].includes(material.tipo) && <PdfReader id={material.id} title={material.titulo} pages={material.paginas} currentPage={savedPages[material.id] ?? material.paginaAtual} onProgressSaved={(page) => setSavedPages((current) => ({ ...current, [material.id]: page }))} />}
                       {(material.urlArquivo || material.urlExterna) && (
                         <a
                           href={
                             material.urlArquivo
-                              ? `${material.urlArquivo}${material.tipo === "PDF" && material.paginaAtual ? `#page=${material.paginaAtual}` : ""}`
+                              ? `/api/materials/${material.id}/file${material.tipo === "PDF" && material.paginaAtual ? `#page=${material.paginaAtual}` : ""}`
                               : material.urlExterna ?? undefined
                           }
                           target="_blank"

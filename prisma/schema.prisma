@@ -58,8 +58,22 @@ model Usuario {
   tentativasQuestoes TentativaQuestao[]
   anotacoes          AnotacaoEstudo[]
   metaSemanal        MetaSemanal?
+  arquivosPendentesExclusao ArquivoPendenteExclusao[]
 
   @@map("User")
+}
+
+model ArquivoPendenteExclusao {
+  id           String   @id @default(cuid())
+  usuarioId    String
+  urlArquivo   String   @unique
+  tentativas   Int      @default(0)
+  ultimoErro   String?
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([criadoEm])
 }
 
 model Sessao {

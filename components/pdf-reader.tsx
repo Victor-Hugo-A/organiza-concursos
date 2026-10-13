@@ -4,7 +4,8 @@ import { ChevronLeft, ChevronRight, Expand, Loader2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/toast-provider";
 
-export function PdfReader({ id, title, url, pages, currentPage, onProgressSaved }: { id: string; title: string; url: string; pages: number | null; currentPage: number | null; onProgressSaved?: (page: number) => void }) {
+export function PdfReader({ id, title, pages, currentPage, onProgressSaved }: { id: string; title: string; pages: number | null; currentPage: number | null; onProgressSaved?: (page: number) => void }) {
+  const url = `/api/materials/${id}/file`;
   const [open, setOpen] = useState(false); const [page, setPage] = useState(currentPage ?? 1); const [savedPage, setSavedPage] = useState(currentPage ?? 1); const [saving, setSaving] = useState(false); const { notify } = useToast(); const router = useRouter();
   async function save(next = page) { setSaving(true); try { const r = await fetch(`/api/materials/${id}/progress`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paginaAtual: next }) }); const data = await r.json(); if (!r.ok) throw new Error(data.message); setSavedPage(next); onProgressSaved?.(next); notify("success", `Página ${next} salva.`); router.refresh(); } catch (error) { notify("error", error instanceof Error ? error.message : "Não foi possível salvar a página."); } finally { setSaving(false); } }
   function move(delta: number) { const next = Math.max(1, Math.min(pages ?? Number.MAX_SAFE_INTEGER, page + delta)); setPage(next); save(next); }

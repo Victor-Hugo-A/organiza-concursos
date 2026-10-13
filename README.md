@@ -76,6 +76,10 @@ npm run prisma:migrate
 npm run dev
 ```
 
+### Arquivos na produção
+
+Configure `BLOB_READ_WRITE_TOKEN` no ambiente de produção antes de publicar. Novos PDFs são privados e são entregues apenas pela rota autenticada da aplicação. Após a publicação desta versão, execute uma vez `npm run migrate:private-files` para converter PDFs públicos já existentes. Agende `npm run cleanup:files` para processar exclusões que não tiverem sido concluídas na primeira tentativa.
+
 ## Qualidade e validação
 
 ```bash
