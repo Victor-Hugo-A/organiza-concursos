@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:pdf": "tsx --test tests/pdf-analysis.test.ts",
+    "test:security": "tsx --test tests/rate-limit.test.ts",
     "format": "prettier --write .",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

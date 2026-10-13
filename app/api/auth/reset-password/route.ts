@@ -2,8 +2,9 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hashToken } from "@/lib/auth";
-import { fail, handleApiError, ok } from "@/lib/api-response";
+import { fail, handleApiError, ok, tooManyRequests } from "@/lib/api-response";
 import { passwordError } from "@/lib/password-rules";
+import { rateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   token: z.string().min(20),
@@ -14,6 +15,8 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const limit = rateLimit(request, "reset-password", { limit: 5, windowMs: 15 * 60 * 1000 });
+    if (!limit.allowed) return tooManyRequests(limit.retryAfterSeconds);
     const input = schema.parse(await request.json());
     const registro = await prisma.tokenRedefinicaoSenha.findUnique({
       where: { tokenHash: hashToken(input.token) }

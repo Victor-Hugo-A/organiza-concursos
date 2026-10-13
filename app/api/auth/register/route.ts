@@ -6,7 +6,8 @@ import { sendVerificationEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { normalizeEmail } from "@/lib/strings";
 import { passwordError } from "@/lib/password-rules";
-import { created, fail, handleApiError } from "@/lib/api-response";
+import { created, fail, handleApiError, tooManyRequests } from "@/lib/api-response";
+import { rateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   nome: z.string().trim().min(2).max(80),
@@ -18,6 +19,8 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const limit = rateLimit(request, "register", { limit: 5, windowMs: 60 * 60 * 1000 });
+    if (!limit.allowed) return tooManyRequests(limit.retryAfterSeconds);
     const input = schema.parse(await request.json());
     const email = normalizeEmail(input.email);
     const existente = await prisma.usuario.findUnique({ where: { email } });

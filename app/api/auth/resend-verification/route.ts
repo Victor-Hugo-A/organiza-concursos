@@ -4,10 +4,13 @@ import { createOpaqueToken, hashToken } from "@/lib/auth";
 import { sendVerificationEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { normalizeEmail } from "@/lib/strings";
-import { fail, handleApiError, ok } from "@/lib/api-response";
+import { fail, handleApiError, ok, tooManyRequests } from "@/lib/api-response";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    const limit = rateLimit(request, "resend-verification", { limit: 5, windowMs: 15 * 60 * 1000 });
+    if (!limit.allowed) return tooManyRequests(limit.retryAfterSeconds);
     if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
       return fail("O envio de confirmação ainda não foi configurado.", 503);
     }

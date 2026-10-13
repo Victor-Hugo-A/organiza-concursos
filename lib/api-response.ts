@@ -27,6 +27,23 @@ export function fail(message = "Não foi possível concluir a operação.", stat
   return NextResponse.json({ success: false, message, errors }, { status });
 }
 
+export function tooManyRequests(retryAfterSeconds: number) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.",
+      errors: [],
+    },
+    {
+      status: 429,
+      headers: {
+        "Cache-Control": "no-store",
+        "Retry-After": String(retryAfterSeconds),
+      },
+    },
+  );
+}
+
 export function handleApiError(error: unknown) {
   if (error instanceof ApiError) {
     return fail(error.message, error.status, error.errors);

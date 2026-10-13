@@ -3,7 +3,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth";
 import { normalizeEmail } from "@/lib/strings";
-import { fail, handleApiError, ok } from "@/lib/api-response";
+import { fail, handleApiError, ok, tooManyRequests } from "@/lib/api-response";
+import { rateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   email: z.string().email(),
@@ -13,6 +14,8 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const limit = rateLimit(request, "login", { limit: 8, windowMs: 15 * 60 * 1000 });
+    if (!limit.allowed) return tooManyRequests(limit.retryAfterSeconds);
     const input = schema.parse(await request.json());
     const usuario = await prisma.usuario.findUnique({ where: { email: normalizeEmail(input.email) } });
     if (!usuario || !(await bcrypt.compare(input.senha, usuario.senhaHash))) {
