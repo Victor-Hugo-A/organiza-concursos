@@ -34,6 +34,7 @@ import { useToast } from "@/components/toast-provider";
 import { MaterialStudyActions } from "@/components/material-study-actions";
 import { PdfReader } from "@/components/pdf-reader";
 import { DeleteMaterialDialog } from "@/components/delete-material-dialog";
+import { SubjectManagement } from "@/components/subject-management";
 
 type Plan = {
   id: string;
@@ -42,6 +43,7 @@ type Plan = {
     id: string;
     titulo: string;
     topicos: { id: string; titulo: string; topicoPaiId: string | null }[];
+    _count: { questoes: number };
   }[];
 };
 type Material = {
@@ -59,6 +61,7 @@ type Material = {
   resumo: string | null;
   pontosEstudo: string[];
   paginas: number | null;
+  _count: { questoes: number };
   paginaAtual: number | null;
   concluidoEm: string | null;
   ultimoAcessoEm: string | null;
@@ -173,7 +176,7 @@ export function MaterialsManager({
   }
 
   const analyze = useCallback(
-    async (id: string) => {
+    async (id: string, force = false) => {
       if (analysisInFlight.current) return;
       analysisInFlight.current = true;
       attemptedAnalyses.current.add(id);
@@ -183,6 +186,8 @@ export function MaterialsManager({
       try {
         const result = await requestJson(`/api/materials/${id}/analyze`, {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ force }),
         });
         setMessage(result.message);
       } catch (err) {
@@ -388,9 +393,25 @@ export function MaterialsManager({
       <p className="text-sm font-semibold text-emerald-800">
         {subject ? "Um assunto de cada vez" : "Seu estudo, no lugar certo"}
       </p>
-      <h1 className="mt-1 text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl">
-        {subject?.titulo ?? "Minha Biblioteca"}
-      </h1>
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl">
+          {subject?.titulo ?? "Minha Biblioteca"}
+        </h1>
+        {subject && plan && (
+          <SubjectManagement
+            subject={{
+              id: subject.id,
+              titulo: subject.titulo,
+              planoId: plan.id,
+              topicCount: subject.topicos.length,
+              materialCount: initialMaterials.filter(
+                (material) => material.materiaId === subject.id,
+              ).length,
+              questionCount: subject._count.questoes,
+            }}
+          />
+        )}
+      </div>
       <p className="mt-3 max-w-2xl leading-7 text-stone-600">
         {subject
           ? "Reúna os PDFs desta matéria e transforme cada leitura em um resumo com conceitos para revisar."
@@ -839,7 +860,7 @@ export function MaterialsManager({
                     <div className="mt-6 border-t border-stone-100 pt-5">
                       <h4 className="flex items-center gap-2 font-semibold text-emerald-900">
                         <Sparkles className="h-4 w-4" />
-                        Resumo do documento
+                        Leitura guiada do documento
                       </h4>
                       {material.paginas && (
                         <p className="mt-1 text-xs font-medium text-stone-500">
@@ -848,6 +869,10 @@ export function MaterialsManager({
                       )}
                       <p className="mt-3 whitespace-pre-line text-sm leading-7 text-stone-700">
                         {studySummary(material.resumo)}
+                      </p>
+                      <p className="mt-3 text-xs leading-5 text-stone-500">
+                        Trechos originais selecionados com referência de página;
+                        confira o PDF, principalmente se ele for digitalizado.
                       </p>
                       {material.pontosEstudo.length > 0 && (
                         <>
@@ -861,6 +886,31 @@ export function MaterialsManager({
                           </ul>
                         </>
                       )}
+                      <div className="mt-5 flex flex-wrap items-center gap-3">
+                        {material._count.questoes > 0 && (
+                          <Link
+                            href={`/app/pratica?material=${material.id}`}
+                            className="btn-primary text-sm"
+                          >
+                            Praticar {material._count.questoes}{" "}
+                            {material._count.questoes === 1
+                              ? "exercício"
+                              : "exercícios"}{" "}
+                            deste PDF
+                          </Link>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => analyze(material.id, true)}
+                          disabled={busy}
+                          className="btn-secondary text-sm"
+                        >
+                          {analyzingId === material.id && (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          )}
+                          Reanalisar PDF
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="mt-5 rounded-2xl bg-stone-50 p-4">
@@ -971,7 +1021,75 @@ export function MaterialsManager({
         onCancel={() => setDeleteTarget(null)}
         onConfirm={removeMaterial}
       />
-      {subjectsModalPlan && <div className="fixed inset-0 z-50 grid place-items-center bg-stone-950/35 p-4"><section role="dialog" aria-modal="true" aria-label="Todas as matérias" className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl"><div className="flex items-start justify-between gap-4"><div><p className="text-sm font-semibold text-emerald-800">{subjectsModalPlan.titulo}</p><h2 className="mt-1 text-xl font-semibold text-stone-950">Escolha uma matéria</h2></div><button type="button" onClick={() => setSubjectsModalPlan(null)} className="btn-secondary text-sm">Fechar</button></div><div className="mt-5 grid max-h-[60vh] gap-3 overflow-y-auto sm:grid-cols-2">{subjectsModalPlan.materias.map((materia) => { const materialCount = initialMaterials.filter((material) => material.materiaId === materia.id).length; return <Link key={materia.id} href={`/app/materiais?plano=${subjectsModalPlan.id}&materia=${materia.id}`} onClick={() => setSubjectsModalPlan(null)} className="rounded-2xl border border-stone-200 p-4 font-semibold text-stone-900 transition hover:border-emerald-300 hover:bg-emerald-50">{materia.titulo}<span className="mt-1 block text-xs font-normal text-stone-500">{materialCount} {materialCount === 1 ? "material organizado" : "materiais organizados"}</span></Link>})}</div></section></div>}
+      {subjectsModalPlan && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-stone-950/35 p-4">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label="Todas as matérias"
+            className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-emerald-800">
+                  {subjectsModalPlan.titulo}
+                </p>
+                <h2 className="mt-1 text-xl font-semibold text-stone-950">
+                  Escolha uma matéria
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSubjectsModalPlan(null)}
+                className="btn-secondary text-sm"
+              >
+                Fechar
+              </button>
+            </div>
+            <div className="mt-5 grid max-h-[60vh] gap-3 overflow-y-auto sm:grid-cols-2">
+              {subjectsModalPlan.materias.map((materia) => {
+                const materialCount = initialMaterials.filter(
+                  (material) => material.materiaId === materia.id,
+                ).length;
+                return (
+                  <article
+                    key={materia.id}
+                    className="rounded-2xl border border-stone-200 p-4"
+                  >
+                    <Link
+                      href={`/app/materiais?plano=${subjectsModalPlan.id}&materia=${materia.id}`}
+                      onClick={() => setSubjectsModalPlan(null)}
+                      className="block rounded-xl font-semibold text-stone-900 hover:text-emerald-800"
+                    >
+                      {materia.titulo}
+                      <span className="mt-1 block text-xs font-normal text-stone-500">
+                        {materialCount}{" "}
+                        {materialCount === 1
+                          ? "material organizado"
+                          : "materiais organizados"}
+                      </span>
+                    </Link>
+                    <div className="mt-3 border-t border-stone-100 pt-3">
+                      <SubjectManagement
+                        subject={{
+                          id: materia.id,
+                          titulo: materia.titulo,
+                          planoId: subjectsModalPlan.id,
+                          topicCount: materia.topicos.length,
+                          materialCount,
+                          questionCount: materia._count.questoes,
+                        }}
+                        onUpdated={() => setSubjectsModalPlan(null)}
+                        onDeleted={() => setSubjectsModalPlan(null)}
+                      />
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

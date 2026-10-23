@@ -4,11 +4,20 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export default async function PracticePage() {
+export default async function PracticePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ material?: string | string[] }>;
+}) {
   const user = await getCurrentUser();
   if (!user) return null;
+  const query = await searchParams;
+  const materialValue = Array.isArray(query.material)
+    ? query.material[0]
+    : query.material;
+  const materialId = materialValue?.slice(0, 100) ?? "";
 
-  const [plans, questions, attempts, correct, attemptsByQuestion] = await Promise.all([
+  const [plans, questions, attempts, correct, attemptsByQuestion, sourceMaterial] = await Promise.all([
     prisma.planoEstudo.findMany({
       where: { usuarioId: user.id, arquivado: false },
       orderBy: { titulo: "asc" },
@@ -29,14 +38,19 @@ export default async function PracticePage() {
       },
     }),
     prisma.questaoEstudo.findMany({
-      where: { usuarioId: user.id },
+      where: {
+        usuarioId: user.id,
+        ...(materialId ? { sourceMaterialId: materialId } : {}),
+      },
       orderBy: { criadoEm: "desc" },
-      take: 100,
+      take: materialId ? 800 : 100,
       select: {
         id: true,
         enunciado: true,
         alternativas: true,
         dificuldade: true,
+        sourcePage: true,
+        sourceMaterial: { select: { id: true, titulo: true } },
         materia: { select: { titulo: true } },
         topico: { select: { titulo: true } },
         tentativas: {
@@ -54,6 +68,12 @@ export default async function PracticePage() {
       where: { usuarioId: user.id },
       _count: { _all: true },
     }),
+    materialId
+      ? prisma.materialEstudo.findFirst({
+          where: { id: materialId, usuarioId: user.id },
+          select: { id: true, titulo: true },
+        })
+      : null,
   ]);
 
   const questionAttempts = new Map<string, { correct: number; incorrect: number }>();
@@ -76,6 +96,7 @@ export default async function PracticePage() {
         })),
       }))}
       stats={{ attempts, correct }}
+      sourceMaterial={sourceMaterial}
     />
   );
 }

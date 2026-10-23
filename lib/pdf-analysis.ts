@@ -36,5 +36,5 @@ export async function analyzePdf(bytes: Buffer, subject = "") {
   });
   const analysis = summarizePages(pages, subject);
   if (!analysis) throw new PdfAnalysisError("Não encontramos texto suficiente para um resumo, mesmo após a leitura por OCR. Verifique se as páginas estão legíveis e tente uma cópia mais nítida.");
-  return analysis;
+  return { ...analysis, paginasTexto: pages };
 }

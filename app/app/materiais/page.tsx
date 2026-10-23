@@ -24,6 +24,7 @@ export default async function MaterialsPage({
           select: {
             id: true,
             titulo: true,
+            _count: { select: { questoes: true } },
             topicos: {
               orderBy: [{ ordem: "asc" }, { titulo: "asc" }],
               select: { id: true, titulo: true, topicoPaiId: true },
@@ -50,6 +51,7 @@ export default async function MaterialsPage({
         resumo: true,
         pontosEstudo: true,
         paginas: true,
+        _count: { select: { questoes: true } },
         paginaAtual: true,
         concluidoEm: true,
         ultimoAcessoEm: true,

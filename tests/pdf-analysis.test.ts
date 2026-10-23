@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { analyzePdf, PdfAnalysisError } from "../lib/pdf-analysis";
 import { isPdf, readMaterialPdf } from "../lib/material-files";
 import { summarizePages } from "../lib/study-summary";
+import { extractPdfExercises } from "../lib/pdf-exercises";
 import { createTextPdf } from "./pdf-fixture";
 
 const biology = [
@@ -121,6 +122,29 @@ test("documento com mais de 200 páginas é lido por inteiro", async () => {
   assert.match(result.resumo, /\(p\. (?:19[0-9]|20[01])\)/);
 });
 
+test("PDF de 108 páginas preserva contexto suficiente ao longo do documento", () => {
+  const letters = (value: number) => {
+    let result = "";
+    for (let current = value; current > 0; current = Math.floor((current - 1) / 26)) {
+      result = String.fromCharCode(97 + ((current - 1) % 26)) + result;
+    }
+    return result;
+  };
+  const pages = Array.from({ length: 108 }, (_, index) => {
+    const topic = `conceito${letters(index + 1)}`;
+    return {
+      page: index + 1,
+      text: `${topic.toLocaleUpperCase("pt-BR")}\n\nO estudo de ${topic} apresenta uma relação importante entre os elementos explicados neste capítulo.\n\nA aplicação de ${topic} ajuda a compreender os princípios e os efeitos descritos no material.`,
+    };
+  });
+  const result = summarizePages(pages)!;
+  const notes = result.resumo.split("\n\n").filter((part) => part.startsWith("• "));
+
+  assert.ok(notes.length >= 50, `Trechos selecionados: ${notes.length}`);
+  assert.ok(notes.some((note) => note.includes("(p. 1)")));
+  assert.ok(notes.some((note) => /\(p\. 10[0-8]\)/.test(note)));
+});
+
 test("cabeçalhos repetidos e perguntas não viram afirmações no resumo", () => {
   const pages = Array.from({ length: 3 }, (_, index) => ({
     page: index + 1,
@@ -161,6 +185,49 @@ test("referências de banca não viram palavras-chave", () => {
     !result.palavrasChave.some((word) => /cebraspe|irbr|secretário/.test(word)),
   );
   assert.doesNotMatch(result.resumo, /CEBRASPE|marque a alternativa/i);
+});
+
+test("importa somente questões objetivas com gabarito explícito e página de origem", () => {
+  const exercises = extractPdfExercises([
+    {
+      page: 12,
+      text: [
+        "QUESTÕES",
+        "1. Qual alternativa descreve corretamente a função da membrana plasmática?",
+        "A) Controla a entrada e saída de substâncias.",
+        "B) Armazena o material genético.",
+        "C) Produz energia para a célula.",
+        "D) Sintetiza proteínas.",
+        "2. Qual organela participa da respiração celular?",
+        "A) Ribossomo.",
+        "B) Mitocôndria.",
+        "C) Lisossomo.",
+        "D) Complexo golgiense.",
+      ].join("\n"),
+    },
+    { page: 13, text: "GABARITO OFICIAL\n1-A\n2-B" },
+  ]);
+
+  assert.equal(exercises.length, 2);
+  assert.equal(exercises[0].pagina, 12);
+  assert.equal(exercises[0].respostaCorreta, "Controla a entrada e saída de substâncias.");
+  assert.equal(exercises[1].respostaCorreta, "Mitocôndria.");
+  assert.equal(exercises[0].explicacao, null);
+});
+
+test("não infere respostas quando o PDF não apresenta gabarito", () => {
+  const exercises = extractPdfExercises([
+    {
+      page: 1,
+      text: [
+        "1. Qual alternativa descreve corretamente a função da membrana plasmática?",
+        "A) Controla a entrada e saída de substâncias.",
+        "B) Armazena o material genético.",
+      ].join("\n"),
+    },
+  ]);
+
+  assert.deepEqual(exercises, []);
 });
 
 test("resumo longo cobre o início, o meio e o fim do documento", () => {

@@ -196,6 +196,7 @@ model MaterialEstudo {
   revisoes          Revisao[]
   sessoesEstudo     SessaoEstudo[]
   anotacoes         AnotacaoEstudo[]
+  questoes          QuestaoEstudo[]
 
   @@index([usuarioId, criadoEm])
   @@index([usuarioId, ultimoAcessoEm])
@@ -266,16 +267,21 @@ model QuestaoEstudo {
   respostaCorreta   String
   explicacao        String?
   dificuldade       DificuldadeEstudo  @default(MEDIO)
-  criadoEm          DateTime           @default(now())
-  atualizadoEm      DateTime           @updatedAt
-  usuario           Usuario            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  materia           MateriaEstudo      @relation(fields: [materiaId], references: [id], onDelete: Cascade)
-  topico            TopicoEstudo?     @relation(fields: [topicoId], references: [id], onDelete: SetNull)
-  tentativas        TentativaQuestao[]
+  sourceMaterialId String?
+  sourcePage       Int?
+  sourceKey        String?            @unique
+  criadoEm         DateTime           @default(now())
+  atualizadoEm     DateTime           @updatedAt
+  usuario          Usuario            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  materia          MateriaEstudo      @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  topico           TopicoEstudo?     @relation(fields: [topicoId], references: [id], onDelete: SetNull)
+  sourceMaterial   MaterialEstudo?    @relation(fields: [sourceMaterialId], references: [id], onDelete: Cascade)
+  tentativas       TentativaQuestao[]
 
   @@index([usuarioId, criadoEm])
   @@index([materiaId, dificuldade])
   @@index([topicoId])
+  @@index([sourceMaterialId])
 }
 
 model TentativaQuestao {

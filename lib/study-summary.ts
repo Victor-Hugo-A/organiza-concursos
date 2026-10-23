@@ -284,9 +284,9 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
   const readablePages = pages.filter(
     (page) => words(page.text).length >= 5,
   ).length;
-  // A long PDF needs representation from its complete progression, not only the
-  // most repetitive concept. One coverage range is created for about five pages.
-  const target = Math.min(32, Math.max(12, Math.ceil(readablePages / 5)));
+  // Keep a useful amount of original context from long documents while covering
+  // the full progression, instead of compressing a large PDF into a few notes.
+  const target = Math.min(80, Math.max(12, Math.ceil(readablePages / 2)));
   const rangeSize = Math.max(1, Math.ceil(pages.length / target));
   const candidates = [...sentences]
     .sort((a, b) => b.score - a.score)
@@ -311,7 +311,7 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
     const index = candidates.findIndex(
       (candidate) =>
         Math.floor((candidate.page - 1) / rangeSize) === range &&
-        characters + candidate.text.length <= 9000,
+        characters + candidate.text.length <= 18000,
     );
     if (index >= 0) select(index);
   }
@@ -320,7 +320,7 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
     let bestScore = -1;
     for (let index = 0; index < candidates.length; index++) {
       const candidate = candidates[index];
-      if (characters + candidate.text.length > 9000) continue;
+      if (characters + candidate.text.length > 18000) continue;
       const range = Math.floor((candidate.page - 1) / rangeSize);
       const similarity = Math.max(
         0,
@@ -331,7 +331,7 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
           return overlap / Math.min(candidate.terms.size, previous.terms.size);
         }),
       );
-      if (similarity > 0.8 && rangeCounts.has(range)) continue;
+      if (similarity > 0.9 && rangeCounts.has(range)) continue;
       const rangeBoost = rangeCounts.has(range) ? 1 : 1.7;
       const score =
         (candidate.score * rangeBoost * (1 - 0.75 * similarity)) /
