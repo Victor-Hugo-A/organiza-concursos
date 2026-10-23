@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { fail, handleApiError } from "@/lib/api-response";
 import { readMaterialPdf } from "@/lib/material-files";
 import { prisma } from "@/lib/prisma";
+import { parsePdfByteRange } from "@/lib/pdf-range";
 
 export const runtime = "nodejs";
 
@@ -21,14 +22,29 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     const filename = (material.nomeArquivo ?? "material.pdf")
       .replaceAll(/[^a-zA-Z0-9._ -]/g, "_")
       .slice(0, 150);
-    return new Response(new Uint8Array(bytes), {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${filename || "material.pdf"}"`,
-        "Cache-Control": "private, no-store",
-        "X-Content-Type-Options": "nosniff"
-      }
+    const headers = new Headers({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `inline; filename="${filename || "material.pdf"}"`,
+      "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
+      "Accept-Ranges": "bytes",
     });
+    const rangeHeader = _request.headers.get("range");
+    if (!rangeHeader) {
+      headers.set("Content-Length", String(bytes.length));
+      return new Response(new Uint8Array(bytes), { headers });
+    }
+
+    const range = parsePdfByteRange(rangeHeader, bytes.length);
+    if (!range) {
+      headers.set("Content-Range", `bytes */${bytes.length}`);
+      return new Response(null, { status: 416, headers });
+    }
+
+    const chunk = bytes.subarray(range.start, range.end + 1);
+    headers.set("Content-Length", String(chunk.length));
+    headers.set("Content-Range", `bytes ${range.start}-${range.end}/${bytes.length}`);
+    return new Response(new Uint8Array(chunk), { status: 206, headers });
   } catch (error) {
     return handleApiError(error);
   }

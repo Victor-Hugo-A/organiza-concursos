@@ -4,6 +4,7 @@ import { analyzePdf, PdfAnalysisError } from "../lib/pdf-analysis";
 import { isPdf, readMaterialPdf } from "../lib/material-files";
 import { summarizePages } from "../lib/study-summary";
 import { extractPdfExercises } from "../lib/pdf-exercises";
+import { parsePdfByteRange } from "../lib/pdf-range";
 import { createTextPdf } from "./pdf-fixture";
 
 const biology = [
@@ -43,6 +44,10 @@ test("PDF real comprimido: resumo e termos em português, sem chave ou chamadas 
       result.palavrasChave.every((term) =>
         biology.flat().join(" ").toLowerCase().includes(term),
       ),
+    );
+    assert.ok(
+      result.palavrasChave.every((term) => term.trim().split(/\s+/).length >= 2),
+      `Termos isolados não devem ser sugeridos: ${result.palavrasChave.join(", ")}`,
     );
     for (const passage of result.resumo
       .split("\n\n")
@@ -309,4 +314,23 @@ test("assinatura PDF e limite de 4 MB", () => {
     ),
     false,
   );
+});
+
+test("interpreta intervalos HTTP do leitor de PDF e rejeita intervalos inválidos", () => {
+  assert.deepEqual(parsePdfByteRange("bytes=0-9", 100), { start: 0, end: 9 });
+  assert.deepEqual(parsePdfByteRange("bytes=20-", 100), {
+    start: 20,
+    end: 99,
+  });
+  assert.deepEqual(parsePdfByteRange("bytes=-10", 100), {
+    start: 90,
+    end: 99,
+  });
+  assert.deepEqual(parsePdfByteRange("bytes=95-120", 100), {
+    start: 95,
+    end: 99,
+  });
+  assert.equal(parsePdfByteRange("bytes=100-", 100), null);
+  assert.equal(parsePdfByteRange("bytes=8-2", 100), null);
+  assert.equal(parsePdfByteRange("bytes=0-1,4-5", 100), null);
 });

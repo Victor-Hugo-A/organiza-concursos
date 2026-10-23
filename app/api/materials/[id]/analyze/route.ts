@@ -75,11 +75,14 @@ export async function POST(
           },
         });
         if (!updated.count) throw new Error("Análise substituída.");
-        await tx.palavraChave.deleteMany({ where: { materialId: id } });
+        await tx.palavraChave.deleteMany({
+          where: { materialId: id, origem: "AUTOMATICA" },
+        });
         await tx.palavraChave.createMany({
           data: pages.palavrasChave.map((termo) => ({
             materialId: id,
             termo,
+            origem: "AUTOMATICA",
           })),
           skipDuplicates: true,
         });

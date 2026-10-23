@@ -57,7 +57,10 @@ export default async function MaterialsPage({
         ultimoAcessoEm: true,
         analiseStatus: true,
         analiseErro: true,
-        palavrasChave: { select: { id: true, termo: true } },
+        palavrasChave: {
+          select: { id: true, termo: true, origem: true, cor: true },
+          orderBy: { criadoEm: "asc" },
+        },
         sessoesEstudo: {
           where: { finalizadaEm: null },
           orderBy: { iniciadaEm: "desc" },

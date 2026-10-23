@@ -41,23 +41,23 @@ enum DificuldadeEstudo {
 }
 
 model Usuario {
-  id                 String              @id @default(cuid())
-  nome               String              @map("name")
-  email              String              @unique
-  senhaHash          String              @map("passwordHash")
-  emailVerificadoEm  DateTime?           @map("emailVerifiedAt")
-  criadoEm           DateTime            @default(now()) @map("createdAt")
-  atualizadoEm       DateTime            @updatedAt @map("updatedAt")
-  planos             PlanoEstudo[]
-  materiais          MaterialEstudo[]
-  tokensVerificacao  TokenVerificacao[]
-  tokensRedefinicao  TokenRedefinicaoSenha[]
-  sessoes            Sessao[]
-  sessoesEstudo      SessaoEstudo[]
-  questoes           QuestaoEstudo[]
-  tentativasQuestoes TentativaQuestao[]
-  anotacoes          AnotacaoEstudo[]
-  metaSemanal        MetaSemanal?
+  id                        String                    @id @default(cuid())
+  nome                      String                    @map("name")
+  email                     String                    @unique
+  senhaHash                 String                    @map("passwordHash")
+  emailVerificadoEm         DateTime?                 @map("emailVerifiedAt")
+  criadoEm                  DateTime                  @default(now()) @map("createdAt")
+  atualizadoEm              DateTime                  @updatedAt @map("updatedAt")
+  planos                    PlanoEstudo[]
+  materiais                 MaterialEstudo[]
+  tokensVerificacao         TokenVerificacao[]
+  tokensRedefinicao         TokenRedefinicaoSenha[]
+  sessoes                   Sessao[]
+  sessoesEstudo             SessaoEstudo[]
+  questoes                  QuestaoEstudo[]
+  tentativasQuestoes        TentativaQuestao[]
+  anotacoes                 AnotacaoEstudo[]
+  metaSemanal               MetaSemanal?
   arquivosPendentesExclusao ArquivoPendenteExclusao[]
 
   @@map("User")
@@ -77,95 +77,95 @@ model ArquivoPendenteExclusao {
 }
 
 model Sessao {
-  id          String   @id @default(cuid())
-  usuarioId   String
-  tokenHash   String   @unique
-  expiraEm    DateTime
-  criadoEm    DateTime @default(now())
-  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  usuarioId String
+  tokenHash String   @unique
+  expiraEm  DateTime
+  criadoEm  DateTime @default(now())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@index([usuarioId])
   @@index([expiraEm])
 }
 
 model TokenVerificacao {
-  id          String   @id @default(cuid())
-  usuarioId   String
-  tokenHash   String   @unique
-  expiraEm    DateTime
-  criadoEm    DateTime @default(now())
-  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  usuarioId String
+  tokenHash String   @unique
+  expiraEm  DateTime
+  criadoEm  DateTime @default(now())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@index([usuarioId])
   @@index([expiraEm])
 }
 
 model TokenRedefinicaoSenha {
-  id          String   @id @default(cuid())
-  usuarioId   String
-  tokenHash   String   @unique
-  expiraEm    DateTime
-  criadoEm    DateTime @default(now())
-  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  usuarioId String
+  tokenHash String   @unique
+  expiraEm  DateTime
+  criadoEm  DateTime @default(now())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@index([usuarioId])
   @@index([expiraEm])
 }
 
 model PlanoEstudo {
-  id          String          @id @default(cuid())
-  usuarioId   String
-  titulo      String
-  tipo        PlanoTipo       @default(OUTRO)
-  descricao   String?
-  cor         String          @default("#166534")
-  icone       String          @default("AUTO")
-  arquivado   Boolean         @default(false)
-  criadoEm    DateTime        @default(now())
-  atualizadoEm DateTime       @updatedAt
-  usuario     Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  materias    MateriaEstudo[]
-  materiais   MaterialEstudo[]
-  anotacoes   AnotacaoEstudo[]
+  id           String           @id @default(cuid())
+  usuarioId    String
+  titulo       String
+  tipo         PlanoTipo        @default(OUTRO)
+  descricao    String?
+  cor          String           @default("#166534")
+  icone        String           @default("AUTO")
+  arquivado    Boolean          @default(false)
+  criadoEm     DateTime         @default(now())
+  atualizadoEm DateTime         @updatedAt
+  usuario      Usuario          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  materias     MateriaEstudo[]
+  materiais    MaterialEstudo[]
+  anotacoes    AnotacaoEstudo[]
 
   @@index([usuarioId, arquivado])
 }
 
 model MateriaEstudo {
-  id          String       @id @default(cuid())
-  planoId     String
-  titulo      String
-  ordem       Int          @default(0)
-  plano       PlanoEstudo  @relation(fields: [planoId], references: [id], onDelete: Cascade)
-  topicos     TopicoEstudo[]
-  materiais   MaterialEstudo[]
-  questoes    QuestaoEstudo[]
-  anotacoes   AnotacaoEstudo[]
+  id        String           @id @default(cuid())
+  planoId   String
+  titulo    String
+  ordem     Int              @default(0)
+  plano     PlanoEstudo      @relation(fields: [planoId], references: [id], onDelete: Cascade)
+  topicos   TopicoEstudo[]
+  materiais MaterialEstudo[]
+  questoes  QuestaoEstudo[]
+  anotacoes AnotacaoEstudo[]
 
   @@index([planoId, ordem])
 }
 
 model TopicoEstudo {
-  id          String          @id @default(cuid())
-  materiaId   String
-  topicoPaiId String?
-  titulo      String
-  ordem       Int             @default(0)
-  criadoEm    DateTime        @default(now())
-  atualizadoEm DateTime       @updatedAt
-  materia     MateriaEstudo   @relation(fields: [materiaId], references: [id], onDelete: Cascade)
-  topicoPai   TopicoEstudo?  @relation("HierarquiaTopicos", fields: [topicoPaiId], references: [id], onDelete: Cascade)
-  subtopicos  TopicoEstudo[] @relation("HierarquiaTopicos")
-  materiais   MaterialEstudo[]
-  questoes    QuestaoEstudo[]
-  anotacoes   AnotacaoEstudo[]
+  id           String           @id @default(cuid())
+  materiaId    String
+  topicoPaiId  String?
+  titulo       String
+  ordem        Int              @default(0)
+  criadoEm     DateTime         @default(now())
+  atualizadoEm DateTime         @updatedAt
+  materia      MateriaEstudo    @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  topicoPai    TopicoEstudo?    @relation("HierarquiaTopicos", fields: [topicoPaiId], references: [id], onDelete: Cascade)
+  subtopicos   TopicoEstudo[]   @relation("HierarquiaTopicos")
+  materiais    MaterialEstudo[]
+  questoes     QuestaoEstudo[]
+  anotacoes    AnotacaoEstudo[]
 
-  @@index([materiaId, topicoPaiId, ordem])
   @@unique([materiaId, topicoPaiId, titulo])
+  @@index([materiaId, topicoPaiId, ordem])
 }
 
 model MaterialEstudo {
-  id                String            @id @default(cuid())
+  id                String           @id @default(cuid())
   usuarioId         String
   planoId           String?
   materiaId         String?
@@ -175,23 +175,23 @@ model MaterialEstudo {
   urlArquivo        String?
   urlExterna        String?
   conteudo          String?
-  tipo              MaterialTipo      @default(PDF)
+  tipo              MaterialTipo     @default(PDF)
   tamanhoBytes      Int?
   paginas           Int?
   resumo            String?
-  pontosEstudo      String[]          @default([])
-  analiseStatus     String            @default("PENDENTE")
+  pontosEstudo      String[]         @default([])
+  analiseStatus     String           @default("PENDENTE")
   analiseErro       String?
-  analiseIniciadaEm  DateTime?
+  analiseIniciadaEm DateTime?
   paginaAtual       Int?
   concluidoEm       DateTime?
   ultimoAcessoEm    DateTime?
-  criadoEm          DateTime          @default(now())
-  atualizadoEm      DateTime          @updatedAt
-  usuario           Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  plano             PlanoEstudo?      @relation(fields: [planoId], references: [id], onDelete: SetNull)
-  materia           MateriaEstudo?    @relation(fields: [materiaId], references: [id], onDelete: SetNull)
-  topico            TopicoEstudo?     @relation(fields: [topicoId], references: [id], onDelete: SetNull)
+  criadoEm          DateTime         @default(now())
+  atualizadoEm      DateTime         @updatedAt
+  usuario           Usuario          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  plano             PlanoEstudo?     @relation(fields: [planoId], references: [id], onDelete: SetNull)
+  materia           MateriaEstudo?   @relation(fields: [materiaId], references: [id], onDelete: SetNull)
+  topico            TopicoEstudo?    @relation(fields: [topicoId], references: [id], onDelete: SetNull)
   palavrasChave     PalavraChave[]
   revisoes          Revisao[]
   sessoesEstudo     SessaoEstudo[]
@@ -206,17 +206,17 @@ model MaterialEstudo {
 }
 
 model SessaoEstudo {
-  id               String             @id @default(cuid())
-  usuarioId        String
-  materialId       String
-  iniciadaEm       DateTime           @default(now())
-  finalizadaEm     DateTime?
-  duracaoSegundos  Int?
-  dificuldade      DificuldadeEstudo?
-  criadoEm         DateTime           @default(now())
-  usuario          Usuario            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  material         MaterialEstudo     @relation(fields: [materialId], references: [id], onDelete: Cascade)
-  anotacoes        AnotacaoEstudo[]
+  id              String             @id @default(cuid())
+  usuarioId       String
+  materialId      String
+  iniciadaEm      DateTime           @default(now())
+  finalizadaEm    DateTime?
+  duracaoSegundos Int?
+  dificuldade     DificuldadeEstudo?
+  criadoEm        DateTime           @default(now())
+  usuario         Usuario            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  material        MaterialEstudo     @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  anotacoes       AnotacaoEstudo[]
 
   @@index([usuarioId, iniciadaEm])
   @@index([materialId, iniciadaEm])
@@ -225,32 +225,32 @@ model SessaoEstudo {
 }
 
 model MetaSemanal {
-  id              String   @id @default(cuid())
-  usuarioId       String   @unique
-  minutosEstudo   Int      @default(0)
-  questoes        Int      @default(0)
-  atualizadoEm    DateTime @updatedAt
-  usuario         Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  usuarioId     String   @unique
+  minutosEstudo Int      @default(0)
+  questoes      Int      @default(0)
+  atualizadoEm  DateTime @updatedAt
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 }
 
 model AnotacaoEstudo {
-  id              String          @id @default(cuid())
-  usuarioId       String
-  planoId         String?
-  materiaId       String?
-  topicoId        String?
-  materialId      String?
-  sessaoEstudoId  String?
-  titulo          String
-  conteudo        String
-  criadoEm        DateTime        @default(now())
-  atualizadoEm    DateTime        @updatedAt
-  usuario         Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  plano           PlanoEstudo?    @relation(fields: [planoId], references: [id], onDelete: SetNull)
-  materia         MateriaEstudo?  @relation(fields: [materiaId], references: [id], onDelete: SetNull)
-  topico          TopicoEstudo?   @relation(fields: [topicoId], references: [id], onDelete: SetNull)
-  material        MaterialEstudo? @relation(fields: [materialId], references: [id], onDelete: SetNull)
-  sessaoEstudo    SessaoEstudo?   @relation(fields: [sessaoEstudoId], references: [id], onDelete: SetNull)
+  id             String          @id @default(cuid())
+  usuarioId      String
+  planoId        String?
+  materiaId      String?
+  topicoId       String?
+  materialId     String?
+  sessaoEstudoId String?
+  titulo         String
+  conteudo       String
+  criadoEm       DateTime        @default(now())
+  atualizadoEm   DateTime        @updatedAt
+  usuario        Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  plano          PlanoEstudo?    @relation(fields: [planoId], references: [id], onDelete: SetNull)
+  materia        MateriaEstudo?  @relation(fields: [materiaId], references: [id], onDelete: SetNull)
+  topico         TopicoEstudo?   @relation(fields: [topicoId], references: [id], onDelete: SetNull)
+  material       MaterialEstudo? @relation(fields: [materialId], references: [id], onDelete: SetNull)
+  sessaoEstudo   SessaoEstudo?   @relation(fields: [sessaoEstudoId], references: [id], onDelete: SetNull)
 
   @@index([usuarioId, atualizadoEm])
   @@index([materiaId])
@@ -258,15 +258,15 @@ model AnotacaoEstudo {
 }
 
 model QuestaoEstudo {
-  id                String             @id @default(cuid())
-  usuarioId         String
-  materiaId         String
-  topicoId          String?
-  enunciado         String
-  alternativas      String[]
-  respostaCorreta   String
-  explicacao        String?
-  dificuldade       DificuldadeEstudo  @default(MEDIO)
+  id               String             @id @default(cuid())
+  usuarioId        String
+  materiaId        String
+  topicoId         String?
+  enunciado        String
+  alternativas     String[]
+  respostaCorreta  String
+  explicacao       String?
+  dificuldade      DificuldadeEstudo  @default(MEDIO)
   sourceMaterialId String?
   sourcePage       Int?
   sourceKey        String?            @unique
@@ -274,7 +274,7 @@ model QuestaoEstudo {
   atualizadoEm     DateTime           @updatedAt
   usuario          Usuario            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   materia          MateriaEstudo      @relation(fields: [materiaId], references: [id], onDelete: Cascade)
-  topico           TopicoEstudo?     @relation(fields: [topicoId], references: [id], onDelete: SetNull)
+  topico           TopicoEstudo?      @relation(fields: [topicoId], references: [id], onDelete: SetNull)
   sourceMaterial   MaterialEstudo?    @relation(fields: [sourceMaterialId], references: [id], onDelete: Cascade)
   tentativas       TentativaQuestao[]
 
@@ -285,14 +285,14 @@ model QuestaoEstudo {
 }
 
 model TentativaQuestao {
-  id                String          @id @default(cuid())
+  id                String        @id @default(cuid())
   usuarioId         String
   questaoId         String
   respostaEscolhida String
   correta           Boolean
-  respondidaEm      DateTime        @default(now())
-  usuario           Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  questao           QuestaoEstudo   @relation(fields: [questaoId], references: [id], onDelete: Cascade)
+  respondidaEm      DateTime      @default(now())
+  usuario           Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  questao           QuestaoEstudo @relation(fields: [questaoId], references: [id], onDelete: Cascade)
 
   @@index([usuarioId, respondidaEm])
   @@index([questaoId, respondidaEm])
@@ -300,26 +300,28 @@ model TentativaQuestao {
 }
 
 model PalavraChave {
-  id          String           @id @default(cuid())
-  materialId  String
-  termo       String
-  criadoEm    DateTime         @default(now())
-  material    MaterialEstudo   @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  id         String         @id @default(cuid())
+  materialId String
+  termo      String
+  origem     String         @default("AUTOMATICA")
+  cor        String         @default("#FEF08A")
+  criadoEm   DateTime       @default(now())
+  material   MaterialEstudo @relation(fields: [materialId], references: [id], onDelete: Cascade)
 
   @@unique([materialId, termo])
   @@index([termo])
 }
 
 model Revisao {
-  id          String         @id @default(cuid())
-  materialId  String
-  titulo      String
+  id           String         @id @default(cuid())
+  materialId   String
+  titulo       String
   agendadaPara DateTime
-  concluidaEm DateTime?
-  status      RevisaoStatus  @default(PENDENTE)
-  origem      RevisaoOrigem  @default(AUTOMATICA)
-  criadoEm    DateTime       @default(now())
-  material    MaterialEstudo @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  concluidaEm  DateTime?
+  status       RevisaoStatus  @default(PENDENTE)
+  origem       RevisaoOrigem  @default(AUTOMATICA)
+  criadoEm     DateTime       @default(now())
+  material     MaterialEstudo @relation(fields: [materialId], references: [id], onDelete: Cascade)
 
   @@index([agendadaPara, status])
   @@index([materialId])

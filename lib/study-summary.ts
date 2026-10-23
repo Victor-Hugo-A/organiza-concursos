@@ -24,7 +24,7 @@ for (const word of [
   "irbr",
 ])
   stopWords.add(word);
-const connectors = new Set(["de", "da", "do", "das", "dos"]);
+const connectors = new Set(["de", "da", "do", "das", "dos", "e"]);
 const normalize = (value: string) =>
   value
     .toLocaleLowerCase("pt-BR")
@@ -249,9 +249,11 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
       term.score *= term.count >= 2 || term.heading ? 1.9 : 0.45;
     }
   }
-  const rankedTerms = [...vocabulary.entries()].sort(
-    (a, b) => b[1].score - a[1].score || a[0].localeCompare(b[0], "pt-BR"),
-  );
+  const rankedTerms = [...vocabulary.entries()]
+    .filter(([, term]) => term.size > 1 && (term.count >= 2 || term.heading))
+    .sort(
+      (a, b) => b[1].score - a[1].score || a[0].localeCompare(b[0], "pt-BR"),
+    );
   const keywords: string[] = [];
   const selectedTermSets: Set<string>[] = [];
   for (const [, term] of rankedTerms) {
@@ -266,7 +268,7 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
       continue;
     keywords.push(term.label);
     selectedTermSets.push(terms);
-    if (keywords.length >= 12) break;
+    if (keywords.length >= 8) break;
   }
   for (const sentence of sentences) {
     sentence.score =
@@ -345,7 +347,7 @@ export function summarizePages(pages: PdfPageText[], subject = "") {
     select(bestIndex);
   }
   selected.sort((a, b) => a.page - b.page || a.index - b.index);
-  if (!selected.length || !keywords.length) return null;
+  if (!selected.length) return null;
   const partial =
     readablePages < pages.length
       ? `Resumo apenas das ${readablePages} de ${pages.length} páginas com texto extraível. Páginas sem texto podem conter imagens ou digitalizações e não estão incluídas.\n\n`

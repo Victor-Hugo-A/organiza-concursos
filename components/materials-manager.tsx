@@ -67,7 +67,12 @@ type Material = {
   ultimoAcessoEm: string | null;
   analiseStatus: string;
   analiseErro: string | null;
-  palavrasChave: { id: string; termo: string }[];
+  palavrasChave: {
+    id: string;
+    termo: string;
+    origem: string;
+    cor: string;
+  }[];
   sessoesEstudo: { id: string; iniciadaEm: string }[];
 };
 
@@ -801,7 +806,7 @@ export function MaterialsManager({
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {material.urlArquivo && ["PDF", "SLIDE", "DOCUMENTO"].includes(material.tipo) && <PdfReader id={material.id} title={material.titulo} pages={material.paginas} currentPage={savedPages[material.id] ?? material.paginaAtual} onProgressSaved={(page) => setSavedPages((current) => ({ ...current, [material.id]: page }))} />}
+                      {material.urlArquivo && ["PDF", "SLIDE", "DOCUMENTO"].includes(material.tipo) && <PdfReader id={material.id} title={material.titulo} pages={material.paginas} currentPage={savedPages[material.id] ?? material.paginaAtual} keywords={material.palavrasChave} onProgressSaved={(page) => setSavedPages((current) => ({ ...current, [material.id]: page }))} />}
                       {(material.urlArquivo || material.urlExterna) && (
                         <a
                           href={
