@@ -17,6 +17,7 @@ enum PlanoTipo {
 
 enum MaterialTipo {
   PDF
+  IMAGEM
   SLIDE
   DOCUMENTO
   TEXTO
@@ -193,6 +194,7 @@ model MaterialEstudo {
   materia           MateriaEstudo?   @relation(fields: [materiaId], references: [id], onDelete: SetNull)
   topico            TopicoEstudo?    @relation(fields: [topicoId], references: [id], onDelete: SetNull)
   palavrasChave     PalavraChave[]
+  marcacoes         MarcacaoMaterial[]
   revisoes          Revisao[]
   sessoesEstudo     SessaoEstudo[]
   anotacoes         AnotacaoEstudo[]
@@ -310,6 +312,20 @@ model PalavraChave {
 
   @@unique([materialId, termo])
   @@index([termo])
+}
+
+model MarcacaoMaterial {
+  id         String         @id @default(cuid())
+  materialId String
+  pagina     Int
+  texto      String
+  estilo     String
+  cor        String
+  posicoes   Json
+  criadoEm   DateTime       @default(now())
+  material   MaterialEstudo @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@index([materialId, pagina])
 }
 
 model Revisao {

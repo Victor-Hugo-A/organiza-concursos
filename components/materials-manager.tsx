@@ -4,8 +4,6 @@ import Link from "next/link";
 import {
   ChangeEvent,
   FormEvent,
-  useCallback,
-  useEffect,
   useRef,
   useState,
 } from "react";
@@ -23,13 +21,11 @@ import {
   NotebookPen,
   Plus,
   Search,
-  Sparkles,
   Trash2,
 } from "lucide-react";
 import { PlanCreator } from "@/components/plan-creator";
 import { BackLink } from "@/components/back-link";
 import { TopicManager } from "@/components/topic-manager";
-import { LibraryMaterialCreator } from "@/components/library-material-creator";
 import { useToast } from "@/components/toast-provider";
 import { MaterialStudyActions } from "@/components/material-study-actions";
 import { PdfReader } from "@/components/pdf-reader";
@@ -53,20 +49,16 @@ type Material = {
   urlArquivo: string | null;
   urlExterna: string | null;
   conteudo: string | null;
-  tipo: "PDF" | "SLIDE" | "DOCUMENTO" | "TEXTO" | "ANOTACAO" | "LINK";
+  tipo: "PDF" | "IMAGEM" | "SLIDE" | "DOCUMENTO" | "TEXTO" | "ANOTACAO" | "LINK";
   materiaId: string | null;
   planoId: string | null;
   topicoId: string | null;
   topico: { id: string; titulo: string } | null;
-  resumo: string | null;
-  pontosEstudo: string[];
   paginas: number | null;
   _count: { questoes: number };
   paginaAtual: number | null;
   concluidoEm: string | null;
   ultimoAcessoEm: string | null;
-  analiseStatus: string;
-  analiseErro: string | null;
   palavrasChave: {
     id: string;
     termo: string;
@@ -75,12 +67,6 @@ type Material = {
   }[];
   sessoesEstudo: { id: string; iniciadaEm: string }[];
 };
-
-function studySummary(value: string) {
-  return value
-    .replace(/\d+\s+páginas?\s+fo(?:i|ram)\s+lidas?\s+por OCR local\.\s*/gi, "")
-    .trim();
-}
 
 async function requestJson(url: string, options: RequestInit) {
   let response: Response;
@@ -119,15 +105,12 @@ export function MaterialsManager({
   const router = useRouter();
   const { notify } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
-  const attemptedAnalyses = useRef(new Set<string>());
-  const analysisInFlight = useRef(false);
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [search, setSearch] = useState("");
   const [materialType, setMaterialType] = useState("TODOS");
   const [pending, setPending] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [analyzingId, setAnalyzingId] = useState("");
   const [movingId, setMovingId] = useState("");
   const [topicUpdatingId, setTopicUpdatingId] = useState("");
   const [deletingId, setDeletingId] = useState("");
@@ -139,7 +122,7 @@ export function MaterialsManager({
   const [subjectsModalPlan, setSubjectsModalPlan] = useState<Plan | null>(null);
   const plan = plans.find((item) => item.id === selectedPlan);
   const subject = plan?.materias.find((item) => item.id === selectedSubject);
-  const busy = pending || Boolean(analyzingId);
+  const busy = pending;
   const visiblePlans = plan ? [plan] : plans;
   const legacy = initialMaterials.filter(
     (material) =>
@@ -167,71 +150,26 @@ export function MaterialsManager({
     setError("");
     if (
       selected &&
-      (!selected.name.toLowerCase().endsWith(".pdf") ||
+      (!(selected.type === "application/pdf" ||
+        ["image/png", "image/jpeg", "image/gif", "image/webp"].includes(selected.type)) ||
         selected.size === 0 ||
         selected.size > 4 * 1024 * 1024)
     ) {
-      setError("Escolha um PDF com conteúdo e tamanho de até 4 MB.");
+      setError("Escolha um PDF ou uma imagem PNG, JPEG, GIF ou WebP de até 4 MB.");
       event.target.value = "";
       setFile(null);
       return;
     }
     setFile(selected);
-    if (selected) setTitle(selected.name.replace(/\.pdf$/i, "").slice(0, 150));
+    if (selected) setTitle(selected.name.replace(/\.[^.]+$/, "").slice(0, 150));
   }
-
-  const analyze = useCallback(
-    async (id: string, force = false) => {
-      if (analysisInFlight.current) return;
-      analysisInFlight.current = true;
-      attemptedAnalyses.current.add(id);
-      setAnalyzingId(id);
-      setError("");
-      setMessage("PDF salvo. Lendo o documento e preparando seu resumo…");
-      try {
-        const result = await requestJson(`/api/materials/${id}/analyze`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ force }),
-        });
-        setMessage(result.message);
-      } catch (err) {
-        setMessage("");
-        setError(
-          err instanceof Error
-            ? err.message
-            : "O PDF está salvo, mas não foi possível gerar o resumo.",
-        );
-      } finally {
-        analysisInFlight.current = false;
-        setAnalyzingId("");
-        router.refresh();
-      }
-    },
-    [router],
-  );
-
-  // Analyze pending PDFs one at a time, including files uploaded before local analysis.
-  // Failed attempts require an explicit retry to avoid a processing loop.
-  useEffect(() => {
-    if (!selectedSubject || busy || analysisInFlight.current) return;
-    const next = initialMaterials.find(
-      (material) =>
-        material.materiaId === selectedSubject &&
-        material.tipo === "PDF" &&
-        material.analiseStatus === "PENDENTE" &&
-        !material.resumo &&
-        !attemptedAnalyses.current.has(material.id),
-    );
-    if (next) void analyze(next.id);
-  }, [selectedSubject, initialMaterials, busy, analyze]);
 
   async function upload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!file || !subject || busy) return;
     setPending(true);
     setError("");
-    setMessage("Enviando seu PDF…");
+    setMessage("Enviando seu arquivo…");
     const data = new FormData();
     data.set("arquivo", file);
     data.set("titulo", title);
@@ -245,11 +183,11 @@ export function MaterialsManager({
       setTitle("");
       formRef.current?.reset();
       router.refresh();
-      await analyze(result.data.id);
+      setMessage(result.message);
     } catch (err) {
       setMessage("");
       setError(
-        err instanceof Error ? err.message : "Não foi possível enviar o PDF.",
+        err instanceof Error ? err.message : "Não foi possível enviar o arquivo.",
       );
     } finally {
       setPending(false);
@@ -419,8 +357,8 @@ export function MaterialsManager({
       </div>
       <p className="mt-3 max-w-2xl leading-7 text-stone-600">
         {subject
-          ? "Reúna os PDFs desta matéria e transforme cada leitura em um resumo com conceitos para revisar."
-          : "Crie uma matéria dentro do seu plano. Depois, abra a matéria para adicionar PDFs, consultar resumos e revisar palavras-chave."}
+          ? "Organize os PDFs e as imagens desta matéria e faça marcações diretamente durante a leitura."
+          : "Crie uma matéria dentro do seu plano e adicione PDFs ou imagens para estudar."}
       </p>
       {message && (
         <p
@@ -673,26 +611,22 @@ export function MaterialsManager({
                   <FolderUp className="h-6 w-6" />
                 </span>
                 <h2 className="mt-4 text-xl font-semibold text-stone-950">
-                  Adicionar PDF em {subject.titulo}
+                  Adicionar PDF ou imagem em {subject.titulo}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-stone-600">
-                  Envie uma apostila, um capítulo ou slides em PDF. O resumo e
-                  as palavras-chave aparecerão junto do material para facilitar
-                  sua próxima revisão.
+                  Envie um PDF ou uma imagem para consultar no leitor da plataforma.
                 </p>
                 <p className="mt-3 text-xs leading-5 text-stone-500">
-                  PDF de até 4 MB e 800 páginas. Slides e documentos
-                  digitalizados também podem ser lidos. O resumo é
-                  preparado na própria plataforma, sem envio do seu PDF a serviços de IA.
+                  Arquivos de até 4 MB. São aceitos PDFs de até 800 páginas e imagens PNG, JPEG, GIF ou WebP.
                 </p>
               </div>
               <div className="grid content-start gap-4">
                 <label>
-                  Arquivo PDF
+                  Arquivo PDF ou imagem
                   <input
                     name="arquivo"
                     type="file"
-                    accept=".pdf,application/pdf"
+                    accept=".pdf,application/pdf,.png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp"
                     required
                     onChange={onFile}
                     className="mt-1.5 bg-white"
@@ -730,18 +664,13 @@ export function MaterialsManager({
                   {busy ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Sparkles className="h-4 w-4" />
+                    <FolderUp className="h-4 w-4" />
                   )}
-                  {analyzingId
-                    ? "Preparando seu resumo…"
-                    : pending
-                      ? "Enviando PDF…"
-                      : "Adicionar PDF e gerar resumo"}
+                  {pending ? "Enviando arquivo…" : "Adicionar PDF ou imagem"}
                 </button>
               </div>
             </fieldset>
           </form>
-          <LibraryMaterialCreator materiaId={subject.id} topics={subject.topicos} />
           <section className="mt-10">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
               <h2 className="text-2xl font-semibold text-stone-950">
@@ -766,6 +695,7 @@ export function MaterialsManager({
                 >
                   <option value="TODOS">Todos os tipos</option>
                   <option value="PDF">PDFs</option>
+                  <option value="IMAGEM">Imagens</option>
                   <option value="TEXTO">Textos</option>
                   <option value="ANOTACAO">Anotações</option>
                   <option value="LINK">Links</option>
@@ -776,7 +706,7 @@ export function MaterialsManager({
               <p className="mt-5 rounded-2xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-600">
                 {search || materialType !== "TODOS"
                   ? "Nenhum material corresponde à busca."
-                  : "Adicione um PDF, texto, anotação ou link para começar sua biblioteca de estudo."}
+                  : "Adicione um PDF ou uma imagem para começar sua biblioteca de estudo."}
               </p>
             )}
             <div className="mt-5 space-y-5">
@@ -806,7 +736,7 @@ export function MaterialsManager({
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {material.urlArquivo && ["PDF", "SLIDE", "DOCUMENTO"].includes(material.tipo) && <PdfReader id={material.id} title={material.titulo} pages={material.paginas} currentPage={savedPages[material.id] ?? material.paginaAtual} keywords={material.palavrasChave} onProgressSaved={(page) => setSavedPages((current) => ({ ...current, [material.id]: page }))} />}
+                      {material.urlArquivo && (material.tipo === "PDF" || material.tipo === "IMAGEM") && <PdfReader id={material.id} title={material.titulo} pages={material.paginas} currentPage={savedPages[material.id] ?? material.paginaAtual} keywords={material.palavrasChave} tipo={material.tipo} onProgressSaved={(page) => setSavedPages((current) => ({ ...current, [material.id]: page }))} />}
                       {(material.urlArquivo || material.urlExterna) && (
                         <a
                           href={
@@ -818,7 +748,7 @@ export function MaterialsManager({
                           rel="noreferrer"
                           className="btn-secondary text-sm"
                         >
-                          {material.tipo === "LINK" ? "Abrir link" : "Abrir PDF"} <ArrowRight className="h-4 w-4" />
+                          {material.tipo === "LINK" ? "Abrir link" : material.tipo === "IMAGEM" ? "Abrir imagem" : "Abrir PDF"} <ArrowRight className="h-4 w-4" />
                         </a>
                       )}
                       <button
@@ -861,87 +791,15 @@ export function MaterialsManager({
                       <p className="whitespace-pre-wrap">{material.conteudo}</p>
                     </div>
                   )}
-                  {material.tipo === "PDF" && (material.resumo ? (
-                    <div className="mt-6 border-t border-stone-100 pt-5">
-                      <h4 className="flex items-center gap-2 font-semibold text-emerald-900">
-                        <Sparkles className="h-4 w-4" />
-                        Leitura guiada do documento
-                      </h4>
-                      {material.paginas && (
-                        <p className="mt-1 text-xs font-medium text-stone-500">
-                          Síntese baseada em {material.paginas} páginas do PDF.
-                        </p>
-                      )}
-                      <p className="mt-3 whitespace-pre-line text-sm leading-7 text-stone-700">
-                        {studySummary(material.resumo)}
-                      </p>
-                      <p className="mt-3 text-xs leading-5 text-stone-500">
-                        Trechos originais selecionados com referência de página;
-                        confira o PDF, principalmente se ele for digitalizado.
-                      </p>
-                      {material.pontosEstudo.length > 0 && (
-                        <>
-                          <h4 className="mt-5 font-semibold text-stone-900">
-                            Pontos para revisar
-                          </h4>
-                          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-stone-600">
-                            {material.pontosEstudo.map((point, index) => (
-                              <li key={index}>{point}</li>
-                            ))}
-                          </ul>
-                        </>
-                      )}
-                      <div className="mt-5 flex flex-wrap items-center gap-3">
-                        {material._count.questoes > 0 && (
-                          <Link
-                            href={`/app/pratica?material=${material.id}`}
-                            className="btn-primary text-sm"
-                          >
-                            Praticar {material._count.questoes}{" "}
-                            {material._count.questoes === 1
-                              ? "exercício"
-                              : "exercícios"}{" "}
-                            deste PDF
-                          </Link>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => analyze(material.id, true)}
-                          disabled={busy}
-                          className="btn-secondary text-sm"
-                        >
-                          {analyzingId === material.id && (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          )}
-                          Reanalisar PDF
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-5 rounded-2xl bg-stone-50 p-4">
-                      <p className="text-sm leading-6 text-stone-600">
-                        {analyzingId === material.id
-                          ? "Lendo o PDF e identificando os principais conceitos…"
-                          : (material.analiseErro ??
-                            (material.analiseStatus === "PROCESSANDO"
-                              ? "Análise em andamento. Se ela tiver sido interrompida, tente novamente em alguns instantes."
-                              : "PDF salvo. Aguardando a análise automática do resumo e das palavras-chave."))}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => analyze(material.id)}
-                        disabled={busy}
-                        className="btn-secondary mt-3 text-sm"
-                      >
-                        {analyzingId === material.id && (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        )}
-                        {material.analiseStatus === "ERRO"
-                          ? "Tentar gerar resumo novamente"
-                          : "Gerar resumo e palavras-chave"}
-                      </button>
-                    </div>
-                  ))}
+                  {material._count.questoes > 0 && (
+                    <Link
+                      href={`/app/pratica?material=${material.id}`}
+                      className="btn-primary mt-5 text-sm"
+                    >
+                      Praticar {material._count.questoes}{" "}
+                      {material._count.questoes === 1 ? "exercício" : "exercícios"} deste PDF
+                    </Link>
+                  )}
                   {material.palavrasChave.length > 0 && (
                     <div className="mt-5">
                       <h4 className="text-sm font-semibold text-stone-900">
@@ -998,13 +856,6 @@ export function MaterialsManager({
                           : "Salvar tópico"}
                       </button>
                     </form>
-                  )}
-                  {material.resumo && (
-                    <p className="mt-5 text-xs leading-5 text-stone-500">
-                      Resumo formado por trechos selecionados do PDF, com
-                      páginas para consulta. As palavras-chave indicam temas do
-                      documento, sem medir a frequência em provas.
-                    </p>
                   )}
                   </details>
                 </article>

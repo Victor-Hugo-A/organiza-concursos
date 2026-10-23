@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { created, fail, handleApiError } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { safeFileName } from "@/lib/strings";
-import { isPdf, MAX_PDF_SIZE } from "@/lib/material-files";
+import { isPdf, isSupportedImage, MAX_PDF_SIZE } from "@/lib/material-files";
 
 export const runtime = "nodejs";
 
@@ -21,12 +21,12 @@ export async function POST(request: Request) {
     const materiaId = String(form.get("materiaId") ?? "").trim();
     const topicoId = String(form.get("topicoId") ?? "").trim();
 
-    if (!(file instanceof File) || file.type !== "application/pdf")
-      return fail("Selecione um arquivo PDF válido.", 400);
+    if (!(file instanceof File))
+      return fail("Selecione um arquivo PDF ou uma imagem válida.", 400);
     if (!titulo || titulo.length > 150)
       return fail("Informe um título válido.", 400);
     if (!file.size || file.size > MAX_PDF_SIZE)
-      return fail("Escolha um PDF com conteúdo e tamanho de até 4 MB.", 400);
+      return fail("Escolha um PDF ou imagem com conteúdo e tamanho de até 4 MB.", 400);
     if (!materiaId)
       return fail("Abra ou crie uma matéria antes de adicionar o PDF.", 400);
     const materia = await prisma.materiaEstudo.findFirst({
@@ -46,9 +46,14 @@ export async function POST(request: Request) {
         return fail("O tópico selecionado não pertence a esta matéria.", 400);
     }
     const bytes = Buffer.from(await file.arrayBuffer());
-    if (!isPdf(bytes))
+    const tipo = file.type === "application/pdf" && isPdf(bytes)
+      ? "PDF"
+      : isSupportedImage(bytes, file.type)
+        ? "IMAGEM"
+        : null;
+    if (!tipo)
       return fail(
-        "Este arquivo não é um PDF válido. Exporte o documento como PDF e tente novamente.",
+        "O arquivo não corresponde a um PDF ou imagem PNG, JPEG, GIF ou WebP válida.",
       );
     if (process.env.VERCEL && !process.env.BLOB_READ_WRITE_TOKEN)
       return fail(
@@ -62,7 +67,7 @@ export async function POST(request: Request) {
       const blob = await put(
         `materiais/${user.id}/${randomUUID()}-${cleanName}`,
         file,
-        { access: "private", addRandomSuffix: false, contentType: "application/pdf" },
+        { access: "private", addRandomSuffix: false, contentType: file.type },
       );
       urlArquivo = blob.url;
       cleanup = () => del(blob.url);
@@ -82,6 +87,7 @@ export async function POST(request: Request) {
         materiaId: materia.id,
         topicoId: topicoId || null,
         titulo,
+        tipo,
         nomeArquivo: cleanName,
         urlArquivo,
         tamanhoBytes: file.size,
@@ -91,7 +97,7 @@ export async function POST(request: Request) {
     cleanup = undefined;
     return created(
       material,
-      `PDF salvo em ${materia.titulo}. Preparando o resumo e as palavras-chave.`,
+      `${tipo === "PDF" ? "PDF" : "Imagem"} salvo em ${materia.titulo}.`,
     );
   } catch (error) {
     if (cleanup) await cleanup().catch(() => undefined);

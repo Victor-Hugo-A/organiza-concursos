@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { fail, handleApiError } from "@/lib/api-response";
-import { readMaterialPdf } from "@/lib/material-files";
+import { getSupportedImageMimeType, isPdf, readMaterialFile } from "@/lib/material-files";
 import { prisma } from "@/lib/prisma";
 import { parsePdfByteRange } from "@/lib/pdf-range";
 
@@ -14,21 +14,31 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     const { id } = await params;
     const material = await prisma.materialEstudo.findFirst({
       where: { id, usuarioId: user.id },
-      select: { nomeArquivo: true, urlArquivo: true }
+      select: { nomeArquivo: true, urlArquivo: true, tipo: true }
     });
     if (!material?.urlArquivo) return fail("Arquivo não encontrado.", 404);
 
-    const bytes = await readMaterialPdf(material.urlArquivo, user.id);
+    const bytes = await readMaterialFile(material.urlArquivo, user.id);
+    const contentType = material.tipo === "PDF" && isPdf(bytes)
+      ? "application/pdf"
+      : material.tipo === "IMAGEM"
+        ? getSupportedImageMimeType(bytes)
+        : null;
+    if (!contentType) return fail("O arquivo salvo está inválido.", 422);
     const filename = (material.nomeArquivo ?? "material.pdf")
       .replaceAll(/[^a-zA-Z0-9._ -]/g, "_")
       .slice(0, 150);
     const headers = new Headers({
-      "Content-Type": "application/pdf",
+      "Content-Type": contentType,
       "Content-Disposition": `inline; filename="${filename || "material.pdf"}"`,
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
       "Accept-Ranges": "bytes",
     });
+    if (contentType !== "application/pdf") {
+      headers.set("Content-Length", String(bytes.length));
+      return new Response(new Uint8Array(bytes), { headers });
+    }
     const rangeHeader = _request.headers.get("range");
     if (!rangeHeader) {
       headers.set("Content-Length", String(bytes.length));
