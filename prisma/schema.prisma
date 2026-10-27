@@ -321,7 +321,7 @@ model MarcacaoMaterial {
   texto      String
   estilo     String
   cor        String
-  opacidade  Float          @default(0.24)
+  opacidade  Float          @default(0.14)
   posicoes   Json
   criadoEm   DateTime       @default(now())
   material   MaterialEstudo @relation(fields: [materialId], references: [id], onDelete: Cascade)

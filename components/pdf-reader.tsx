@@ -47,13 +47,13 @@ const highlightColors = [
 ];
 
 const highlightIntensities = [
-  { name: "Suave", value: 0.16 },
-  { name: "Leve", value: 0.24 },
-  { name: "Médio", value: 0.36 },
-  { name: "Forte", value: 0.52 },
+  { name: "Suave", value: 0.08 },
+  { name: "Leve", value: 0.14 },
+  { name: "Médio", value: 0.22 },
+  { name: "Forte", value: 0.32 },
 ];
 
-function translucentColor(color: string, opacity = 0.24) {
+function translucentColor(color: string, opacity = 0.14) {
   if (!/^#[\da-f]{6}$/i.test(color)) return color;
   return `${color}${Math.round(opacity * 255)
     .toString(16)
@@ -83,10 +83,11 @@ function ColorPicker({
         />
       ))}
       <label
-        className="relative grid h-7 w-7 cursor-pointer place-items-center rounded-full border-2 border-stone-900 bg-white shadow"
+        className="relative inline-flex h-7 cursor-pointer items-center gap-1 rounded-full border-2 border-stone-900 bg-white px-1.5 text-[10px] font-semibold text-stone-700 shadow"
         title="Escolher cor personalizada"
       >
         <span className="h-4 w-4 rounded-full border border-stone-300" style={{ backgroundColor: color }} />
+        <span>Paleta</span>
         <input
           type="color"
           value={color}
@@ -299,8 +300,8 @@ function PdfPage({
           width: `${position.width * 100}%`,
           height: `${position.height * 100}%`,
           backgroundColor:
-            mark.estilo === "REALCE" || position.redondo
-              ? translucentColor(mark.cor, mark.opacidade)
+            mark.estilo === "REALCE"
+              ? translucentColor(mark.cor, mark.opacidade ?? 0.14)
               : "transparent",
           borderColor: mark.cor,
         }}
@@ -319,7 +320,7 @@ function PdfPage({
         width: `${position.width * 100}%`,
         height: `${position.height * 100}%`,
         backgroundColor:
-          draftStyle === "REALCE" || position.redondo
+          draftStyle === "REALCE"
               ? translucentColor(draftColor, draftOpacity)
             : "transparent",
         borderColor: draftColor,
@@ -378,7 +379,7 @@ export function PdfReader({
   const [saving, setSaving] = useState(false);
   const [term, setTerm] = useState("");
   const [color, setColor] = useState(highlightColors[0].value);
-  const [opacity, setOpacity] = useState(0.24);
+  const [opacity, setOpacity] = useState(0.14);
   const [style, setStyle] = useState<"REALCE" | "SUBLINHADO">("REALCE");
   const [brushSize, setBrushSize] = useState(12);
   const [pendingMark, setPendingMark] = useState<{ text: string; positions: Position[] } | null>(null);
@@ -585,19 +586,27 @@ export function PdfReader({
                   <>
                     <h2 className="font-semibold text-stone-900">Pincel de marcação</h2>
                     <p className="mt-1 text-xs leading-5 text-stone-500">Escolha a espessura e a cor. Depois, arraste com o botão esquerdo para pintar só o caminho feito pelo pincel.</p>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button type="button" onClick={() => setStyle("REALCE")} aria-pressed={style === "REALCE"} className={`btn-secondary text-xs ${style === "REALCE" ? "ring-2 ring-emerald-500" : ""}`}>Realçar</button>
+                      <button type="button" onClick={() => setStyle("SUBLINHADO")} aria-pressed={style === "SUBLINHADO"} className={`btn-secondary text-xs ${style === "SUBLINHADO" ? "ring-2 ring-emerald-500" : ""}`}><Underline className="h-4 w-4" />Sublinhar</button>
+                    </div>
+                    <div className="mt-3">
+                      <ColorPicker color={color} onChange={setColor} label="Cor da marcação" />
+                      {style === "REALCE" && <div className="mt-3"><p className="text-xs font-medium text-stone-700">Intensidade do realce</p><div className="mt-2 grid grid-cols-4 gap-1.5">{highlightIntensities.map((item) => <button key={item.name} type="button" onClick={() => setOpacity(item.value)} aria-pressed={opacity === item.value} className={`rounded-lg border px-1 py-1.5 text-[11px] font-semibold ${opacity === item.value ? "border-emerald-700 bg-emerald-50 text-emerald-900" : "border-stone-200 text-stone-600"}`} style={{ background: opacity === item.value ? undefined : translucentColor(color, item.value) }}>{item.name}</button>)}</div></div>}
+                      <p className="mt-2 text-[11px] leading-4 text-stone-500">Clique em Paleta para escolher qualquer tom. A opção Suave é bem translúcida para preservar a leitura.</p>
+                    </div>
                     <button
                       type="button"
                       onClick={() => {
                         setBrushEnabled((enabled) => !enabled);
-                        setPendingMark(null);
                       }}
                       aria-pressed={brushEnabled}
                       className={`mt-3 w-full ${brushEnabled ? "btn-primary" : "btn-secondary"}`}
                     >
                       <Paintbrush className="h-4 w-4" />
-                      {brushEnabled ? "Pincel ativo" : "Ativar pincel"}
+                      {brushEnabled ? (style === "SUBLINHADO" ? "Sublinhador ativo" : "Pincel ativo") : (style === "SUBLINHADO" ? "Ativar sublinhador" : "Ativar pincel")}
                     </button>
-                    <div className="mt-3 flex items-center gap-2" aria-label="Espessura do pincel">
+                    {style === "REALCE" && <div className="mt-3 flex items-center gap-2" aria-label="Espessura do pincel">
                       <span className="text-xs text-stone-600">Espessura</span>
                       {[6, 12, 20].map((size) => (
                         <button
@@ -611,7 +620,7 @@ export function PdfReader({
                           {size}px
                         </button>
                       ))}
-                    </div>
+                    </div>}
                     {pendingMark ? (
                       <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
                         <p className="max-h-24 overflow-auto whitespace-pre-wrap text-xs text-stone-700">{pendingMark.text}</p>

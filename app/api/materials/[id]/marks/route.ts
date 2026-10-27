@@ -18,7 +18,7 @@ const schema = z.object({
   texto: z.string().trim().min(1).max(3000),
   estilo: z.enum(["REALCE", "SUBLINHADO"]),
   cor: z.string().regex(/^#[\da-fA-F]{6}$/),
-  opacidade: z.number().min(0.12).max(0.56).default(0.24),
+  opacidade: z.number().min(0.06).max(0.48).default(0.14),
   posicoes: z.array(positionSchema).min(1).max(2000),
 });
 

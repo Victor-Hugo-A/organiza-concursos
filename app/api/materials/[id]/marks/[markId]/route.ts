@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 const updateSchema = z
   .object({
     cor: z.string().regex(/^#[\da-fA-F]{6}$/).optional(),
-    opacidade: z.number().min(0.12).max(0.56).optional(),
+    opacidade: z.number().min(0.06).max(0.48).optional(),
   })
   .refine((data) => data.cor !== undefined || data.opacidade !== undefined);
 
