@@ -38,8 +38,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .home-word-rotator > span:nth-child(4) { animation-delay: -9s; }
 .pdf-text-layer { position: absolute; inset: 0; z-index: 2; overflow: hidden; line-height: 1; text-align: initial; transform-origin: 0 0; user-select: text; }
 .pdf-text-layer span { position: absolute; color: transparent; white-space: pre; transform-origin: 0 0; cursor: text; }
+.pdf-text-layer.pdf-brush-active { cursor: crosshair; user-select: none; touch-action: none; }
+.pdf-text-layer.pdf-brush-active span { cursor: crosshair; user-select: none; }
 .pdf-text-layer ::selection { background: rgba(59, 130, 246, .35); }
 .pdf-mark { position: absolute; z-index: 1; pointer-events: none; }
+.pdf-mark-round { border-radius: 50%; }
 .pdf-mark-underline { border-bottom: 2px solid; }
 @media (prefers-reduced-motion: reduce) { .home-float-one, .home-float-two, .home-float-three, .home-scan, .home-word-rotator > span { animation: none; } .home-word-rotator > span:not(:first-child) { display: none; } }
 @media (max-width: 639px) { .home-word-rotator { display: grid; min-width: 0; width: 100%; } }

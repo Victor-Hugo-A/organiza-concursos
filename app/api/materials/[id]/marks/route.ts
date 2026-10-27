@@ -9,6 +9,7 @@ const positionSchema = z
     y: z.number().min(0).max(1),
     width: z.number().positive().max(1),
     height: z.number().positive().max(1),
+    redondo: z.boolean().optional(),
   })
   .refine(({ x, y, width, height }) => x + width <= 1 && y + height <= 1);
 
@@ -17,7 +18,7 @@ const schema = z.object({
   texto: z.string().trim().min(1).max(3000),
   estilo: z.enum(["REALCE", "SUBLINHADO"]),
   cor: z.enum(["#FEF08A", "#BBF7D0", "#BFDBFE", "#FBCFE8", "#DDD6FE"]),
-  posicoes: z.array(positionSchema).min(1).max(100),
+  posicoes: z.array(positionSchema).min(1).max(2000),
 });
 
 export async function GET(

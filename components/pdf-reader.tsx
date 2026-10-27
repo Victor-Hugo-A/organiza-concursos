@@ -1,11 +1,18 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import {
+  FormEvent,
+  PointerEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   ChevronLeft,
   ChevronRight,
   Expand,
   Loader2,
+  Paintbrush,
   Plus,
   Underline,
   X,
@@ -14,7 +21,13 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/toast-provider";
 
 type Keyword = { id: string; termo: string; origem: string; cor: string };
-type Position = { x: number; y: number; width: number; height: number };
+type Position = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  redondo?: boolean;
+};
 type Mark = {
   id: string;
   pagina: number;
@@ -44,15 +57,29 @@ function PdfPage({
   url,
   page,
   marks,
+  brushEnabled,
+  draftPositions,
+  draftColor,
+  draftStyle,
+  brushSize,
   onSelection,
 }: {
   url: string;
   page: number;
   marks: Mark[];
+  brushEnabled: boolean;
+  draftPositions: Position[];
+  draftColor: string;
+  draftStyle: "REALCE" | "SUBLINHADO";
+  brushSize: number;
   onSelection: (text: string, positions: Position[]) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const textLayerRef = useRef<HTMLDivElement | null>(null);
+  const strokePositions = useRef<Position[]>([]);
+  const strokeWords = useRef(new Set<string>());
+  const lastStrokePoint = useRef<{ x: number; y: number } | null>(null);
+  const activePointer = useRef<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -125,40 +152,124 @@ function PdfPage({
     };
   }, [page, url]);
 
-  function captureSelection() {
+  function paintTextAt(event: PointerEvent<HTMLDivElement>) {
     const layer = textLayerRef.current;
-    const selection = window.getSelection();
-    if (!layer || !selection || selection.isCollapsed) return;
-    const text = selection.toString().trim();
+    if (!layer || !layer.clientWidth || !layer.clientHeight) return;
     const pageBounds = layer.getBoundingClientRect();
-    if (!text || !pageBounds.width || !pageBounds.height) return;
-    const positions = Array.from(selection.getRangeAt(0).getClientRects())
-      .filter((rect) => rect.width > 0 && rect.height > 0)
-      .slice(0, 100)
-      .map((rect) => {
-        const x = Math.max(
-          0,
-          Math.min(0.999, (rect.left - pageBounds.left) / pageBounds.width),
-        );
-        const y = Math.max(
-          0,
-          Math.min(0.999, (rect.top - pageBounds.top) / pageBounds.height),
-        );
-        return {
-          x,
-          y,
-          width: Math.max(
-            0.001,
-            Math.min(1 - x, rect.width / pageBounds.width),
-          ),
-          height: Math.max(
-            0.001,
-            Math.min(1 - y, rect.height / pageBounds.height),
-          ),
-        };
+    if (!pageBounds.width || !pageBounds.height) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    const textSpan = target?.closest("span");
+    if (textSpan && layer.contains(textSpan)) {
+      const text = (textSpan.textContent ?? "").trim();
+      if (text) strokeWords.current.add(text);
+    }
+    const point = {
+      x: Math.max(0, Math.min(pageBounds.width, event.clientX - pageBounds.left)),
+      y: Math.max(0, Math.min(pageBounds.height, event.clientY - pageBounds.top)),
+    };
+    const radius = brushSize / 2;
+    const addDab = (x: number, y: number) => {
+      if (strokePositions.current.length >= 2000) return;
+      const centerX = Math.max(radius, Math.min(pageBounds.width - radius, x));
+      const centerY = Math.max(radius, Math.min(pageBounds.height - radius, y));
+      const width = Math.min(brushSize, pageBounds.width);
+      const height = Math.min(brushSize, pageBounds.height);
+      strokePositions.current.push({
+        x: (centerX - width / 2) / pageBounds.width,
+        y: (centerY - height / 2) / pageBounds.height,
+        width: width / pageBounds.width,
+        height: height / pageBounds.height,
+        redondo: true,
       });
-    if (positions.length) onSelection(text.slice(0, 3000), positions);
+    };
+    const previous = lastStrokePoint.current;
+    if (!previous) {
+      addDab(point.x, point.y);
+    } else {
+      const distance = Math.hypot(point.x - previous.x, point.y - previous.y);
+      const step = Math.max(2, brushSize * 0.4);
+      const steps = Math.max(1, Math.ceil(distance / step));
+      for (let index = 1; index <= steps; index += 1) {
+        const progress = index / steps;
+        addDab(
+          previous.x + (point.x - previous.x) * progress,
+          previous.y + (point.y - previous.y) * progress,
+        );
+      }
+    }
+    lastStrokePoint.current = point;
+    onSelection(
+      [...strokeWords.current].join(" ").slice(0, 3000) || "Marcação livre",
+      [...strokePositions.current],
+    );
   }
+
+  function clearStroke() {
+    strokePositions.current = [];
+    strokeWords.current.clear();
+    lastStrokePoint.current = null;
+  }
+
+  function startBrush(event: PointerEvent<HTMLDivElement>) {
+    if (!brushEnabled || event.button !== 0) return;
+    event.preventDefault();
+    clearStroke();
+    activePointer.current = event.pointerId;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    paintTextAt(event);
+  }
+
+  function moveBrush(event: PointerEvent<HTMLDivElement>) {
+    if (!brushEnabled || activePointer.current !== event.pointerId) return;
+    paintTextAt(event);
+  }
+
+  function finishBrush(event: PointerEvent<HTMLDivElement>) {
+    if (activePointer.current !== event.pointerId) return;
+    activePointer.current = null;
+    lastStrokePoint.current = null;
+    if (!strokePositions.current.length) clearStroke();
+  }
+
+  const savedMarkBoxes = marks.flatMap((mark) =>
+    mark.posicoes.map((position, index) => (
+      <span
+        key={`${mark.id}-${index}`}
+        aria-label={`${mark.estilo === "SUBLINHADO" ? "Sublinhado" : "Realce"}: ${mark.texto}`}
+        className={`pdf-mark ${position.redondo ? "pdf-mark-round" : ""} ${mark.estilo === "SUBLINHADO" ? "pdf-mark-underline" : ""}`}
+        style={{
+          left: `${position.x * 100}%`,
+          top: `${position.y * 100}%`,
+          width: `${position.width * 100}%`,
+          height: `${position.height * 100}%`,
+          backgroundColor:
+            mark.estilo === "REALCE" || position.redondo
+              ? `${mark.cor}99`
+              : "transparent",
+          borderColor: mark.cor,
+        }}
+      />
+    )),
+  );
+
+  const draftMarkBoxes = draftPositions.map((position, index) => (
+    <span
+      key={`draft-${index}`}
+      aria-hidden="true"
+      className={`pdf-mark ${position.redondo ? "pdf-mark-round" : ""} ${draftStyle === "SUBLINHADO" ? "pdf-mark-underline" : ""}`}
+      style={{
+        left: `${position.x * 100}%`,
+        top: `${position.y * 100}%`,
+        width: `${position.width * 100}%`,
+        height: `${position.height * 100}%`,
+        backgroundColor:
+          draftStyle === "REALCE" || position.redondo
+            ? `${draftColor}99`
+            : "transparent",
+        borderColor: draftColor,
+      }}
+    />
+  ));
 
   return (
     <div className="relative min-h-full overflow-auto p-4">
@@ -173,28 +284,14 @@ function PdfPage({
         style={{ isolation: "isolate" }}
       >
         <canvas ref={canvasRef} className="relative z-0 block" />
-        {marks.flatMap((mark) =>
-          mark.posicoes.map((position, index) => (
-            <span
-              key={`${mark.id}-${index}`}
-              aria-label={`${mark.estilo === "SUBLINHADO" ? "Sublinhado" : "Realce"}: ${mark.texto}`}
-              className={`pdf-mark ${mark.estilo === "SUBLINHADO" ? "pdf-mark-underline" : ""}`}
-              style={{
-                left: `${position.x * 100}%`,
-                top: `${position.y * 100}%`,
-                width: `${position.width * 100}%`,
-                height: `${position.height * 100}%`,
-                backgroundColor: mark.estilo === "REALCE" ? `${mark.cor}99` : "transparent",
-                borderColor: mark.cor,
-              }}
-            />
-          )),
-        )}
+        {[...savedMarkBoxes, ...draftMarkBoxes]}
         <div
           ref={textLayerRef}
-          className="pdf-text-layer"
-          onMouseUp={captureSelection}
-          onTouchEnd={captureSelection}
+          className={`pdf-text-layer ${brushEnabled ? "pdf-brush-active" : ""}`}
+          onPointerDown={startBrush}
+          onPointerMove={moveBrush}
+          onPointerUp={finishBrush}
+          onPointerCancel={finishBrush}
         />
       </div>
     </div>
@@ -226,7 +323,9 @@ export function PdfReader({
   const [term, setTerm] = useState("");
   const [color, setColor] = useState(highlightColors[0].value);
   const [style, setStyle] = useState<"REALCE" | "SUBLINHADO">("REALCE");
+  const [brushSize, setBrushSize] = useState(12);
   const [pendingMark, setPendingMark] = useState<{ text: string; positions: Position[] } | null>(null);
+  const [brushEnabled, setBrushEnabled] = useState(false);
   const [marks, setMarks] = useState<Mark[]>([]);
   const [savingMark, setSavingMark] = useState(false);
   const [savingKeyword, setSavingKeyword] = useState(false);
@@ -276,8 +375,8 @@ export function PdfReader({
 
   function move(delta: number) {
     const next = Math.max(1, Math.min(pages ?? Number.MAX_SAFE_INTEGER, page + delta));
+    setPendingMark(null);
     setPage(next);
-    void save(next);
   }
 
   async function saveMark() {
@@ -297,7 +396,6 @@ export function PdfReader({
       });
       setMarks((current) => [...current, result.data as Mark]);
       setPendingMark(null);
-      window.getSelection()?.removeAllRanges();
       notify("success", "Marcação salva no PDF.");
     } catch (saveError) {
       notify("error", saveError instanceof Error ? saveError.message : "Não foi possível salvar a marcação.");
@@ -385,6 +483,11 @@ export function PdfReader({
                     url={url}
                     page={page}
                     marks={marks.filter((mark) => mark.pagina === page)}
+                    brushEnabled={brushEnabled}
+                    draftPositions={pendingMark?.positions ?? []}
+                    draftColor={color}
+                    draftStyle={style}
+                    brushSize={brushSize}
                     onSelection={(text, positions) => setPendingMark({ text, positions })}
                   />
                 ) : (
@@ -394,8 +497,35 @@ export function PdfReader({
               <aside className="max-h-[45vh] w-full shrink-0 overflow-y-auto border-t border-stone-200 bg-white p-4 md:max-h-none md:w-80 md:border-l md:border-t-0">
                 {tipo === "PDF" && (
                   <>
-                    <h2 className="font-semibold text-stone-900">Marcar trecho selecionado</h2>
-                    <p className="mt-1 text-xs leading-5 text-stone-500">Selecione um trecho do texto no PDF e escolha realce ou sublinhado.</p>
+                    <h2 className="font-semibold text-stone-900">Pincel de marcação</h2>
+                    <p className="mt-1 text-xs leading-5 text-stone-500">Escolha a espessura e a cor. Depois, arraste com o botão esquerdo para pintar só o caminho feito pelo pincel.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBrushEnabled((enabled) => !enabled);
+                        setPendingMark(null);
+                      }}
+                      aria-pressed={brushEnabled}
+                      className={`mt-3 w-full ${brushEnabled ? "btn-primary" : "btn-secondary"}`}
+                    >
+                      <Paintbrush className="h-4 w-4" />
+                      {brushEnabled ? "Pincel ativo" : "Ativar pincel"}
+                    </button>
+                    <div className="mt-3 flex items-center gap-2" aria-label="Espessura do pincel">
+                      <span className="text-xs text-stone-600">Espessura</span>
+                      {[6, 12, 20].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setBrushSize(size)}
+                          aria-label={`Pincel de ${size} pixels`}
+                          aria-pressed={brushSize === size}
+                          className={`rounded-lg border px-2 py-1 text-xs ${brushSize === size ? "border-emerald-700 bg-emerald-50 text-emerald-900" : "border-stone-200"}`}
+                        >
+                          {size}px
+                        </button>
+                      ))}
+                    </div>
                     {pendingMark ? (
                       <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
                         <p className="max-h-24 overflow-auto whitespace-pre-wrap text-xs text-stone-700">{pendingMark.text}</p>
@@ -410,7 +540,7 @@ export function PdfReader({
                         </div>
                         <button type="button" onClick={() => void saveMark()} disabled={savingMark} className="btn-primary mt-3 w-full text-sm">{savingMark ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}Salvar marcação</button>
                       </div>
-                    ) : <p className="mt-3 rounded-xl bg-stone-50 p-3 text-xs text-stone-500">Nenhum trecho selecionado.</p>}
+                    ) : <p className="mt-3 rounded-xl bg-stone-50 p-3 text-xs text-stone-500">Ative o pincel e pinte a área exata que deseja marcar, mesmo apenas parte de uma palavra.</p>}
                     <h3 className="mt-5 font-semibold text-stone-900">Marcações desta página</h3>
                     <div className="mt-2 space-y-2">
                       {marks.filter((mark) => mark.pagina === page).map((mark) => (
@@ -450,7 +580,7 @@ export function PdfReader({
             {tipo === "PDF" && (
               <footer className="flex items-center justify-between border-t border-stone-200 px-4 py-3">
                 <button type="button" onClick={() => move(-1)} disabled={saving || page <= 1} className="btn-secondary text-sm"><ChevronLeft className="h-4 w-4" />Anterior</button>
-                <button type="button" onClick={() => void save()} disabled={saving} className="text-sm font-semibold text-emerald-800">{saving ? <Loader2 className="inline h-4 w-4 animate-spin" /> : savedPage === page ? `Página ${page} salva` : "Salvar página"}</button>
+                <button type="button" onClick={() => void save()} disabled={saving || savedPage === page} className="text-sm font-semibold text-emerald-800">{saving ? <Loader2 className="inline h-4 w-4 animate-spin" /> : savedPage === page ? `Página ${page} salva` : "Salvar página"}</button>
                 <button type="button" onClick={() => move(1)} disabled={saving || Boolean(pages && page >= pages)} className="btn-secondary text-sm">Próxima<ChevronRight className="h-4 w-4" /></button>
               </footer>
             )}
