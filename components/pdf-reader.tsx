@@ -344,7 +344,7 @@ function PdfPage({
         {[...savedMarkBoxes, ...draftMarkBoxes]}
         <div
           ref={textLayerRef}
-          className={`pdf-text-layer ${brushEnabled ? "pdf-brush-active" : ""}`}
+          className={`pdf-text-layer ${brushEnabled ? `pdf-brush-active ${draftStyle === "REALCE" ? "pdf-brush-highlight" : "pdf-brush-underline"}` : ""}`}
           onPointerDown={startBrush}
           onPointerMove={moveBrush}
           onPointerUp={finishBrush}
