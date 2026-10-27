@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { analyzePdf, PdfAnalysisError } from "../lib/pdf-analysis";
-import { isPdf, readMaterialPdf } from "../lib/material-files";
+import {
+  getSupportedImageMimeType,
+  isPdf,
+  isSupportedImage,
+  readMaterialPdf,
+} from "../lib/material-files";
 import { summarizePages } from "../lib/study-summary";
 import { extractPdfExercises } from "../lib/pdf-exercises";
 import { parsePdfByteRange } from "../lib/pdf-range";
@@ -314,6 +319,21 @@ test("assinatura PDF e limite de 4 MB", () => {
     ),
     false,
   );
+});
+
+test("reconhece imagens pelos bytes e não apenas pela extensão ou MIME informado", () => {
+  const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0]);
+  const gif = Buffer.from("GIF89a");
+  const webp = Buffer.from("RIFFxxxxWEBP");
+
+  assert.equal(getSupportedImageMimeType(png), "image/png");
+  assert.equal(getSupportedImageMimeType(jpeg), "image/jpeg");
+  assert.equal(getSupportedImageMimeType(gif), "image/gif");
+  assert.equal(getSupportedImageMimeType(webp), "image/webp");
+  assert.equal(isSupportedImage(png, "image/png"), true);
+  assert.equal(isSupportedImage(png, "image/jpeg"), false);
+  assert.equal(getSupportedImageMimeType(Buffer.from("fake image")), null);
 });
 
 test("interpreta intervalos HTTP do leitor de PDF e rejeita intervalos inválidos", () => {
