@@ -49,7 +49,8 @@ export function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const senhaAtual = String(form.get("senhaAtual") ?? "");
     const novaSenha = String(form.get("novaSenha") ?? "");
     const confirmacao = String(form.get("confirmacao") ?? "");
@@ -79,7 +80,7 @@ export function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose
         setError(result.message ?? "Não foi possível alterar a senha.");
         return;
       }
-      event.currentTarget.reset();
+      formElement.reset();
       onClose();
       notify("success", result.message ?? "Senha atualizada.");
     } catch {
