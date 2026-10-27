@@ -14,6 +14,7 @@ import {
   ChevronDown,
   FileText,
   LayoutDashboard,
+  KeyRound,
   LogOut,
   Menu,
   Plus,
@@ -24,6 +25,7 @@ import {
 import clsx from "clsx";
 import { BrandMark } from "@/components/brand-mark";
 import { BackLink } from "@/components/back-link";
+import { ChangePasswordDialog } from "@/components/change-password-dialog";
 import { useToast } from "@/components/toast-provider";
 
 const items = [
@@ -71,6 +73,7 @@ export function StudyShell({
   const router = useRouter();
   const { notify } = useToast();
   const [accountOpen, setAccountOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const initials = user.nome
@@ -175,6 +178,9 @@ export function StudyShell({
             </button>
             {accountOpen && (
               <div className={clsx("absolute z-30 rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg", sidebarExpanded ? "bottom-full mb-2 w-full" : "bottom-0 left-full ml-3 w-52")}>
+                <button type="button" onClick={() => { setAccountOpen(false); setChangePasswordOpen(true); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-emerald-50 hover:text-emerald-900">
+                  <KeyRound className="h-4 w-4" /> Trocar senha
+                </button>
                 <button type="button" onClick={logout} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
                   <LogOut className="h-4 w-4" /> Sair da conta
                 </button>
@@ -183,6 +189,8 @@ export function StudyShell({
           </div>
         </div>
       </aside>
+
+      <ChangePasswordDialog open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
 
       <div className={clsx("flex min-h-screen min-w-0 flex-col transition-[padding] duration-200", sidebarExpanded ? "lg:pl-[17rem]" : "lg:pl-28")}>
         <header className="sticky top-0 z-20 border-b border-stone-200/90 bg-white/90 px-5 py-3 backdrop-blur lg:px-10">
@@ -201,6 +209,7 @@ export function StudyShell({
               </nav>
             </div>
             <div className="flex shrink-0 items-center gap-2">
+              <button type="button" onClick={() => setChangePasswordOpen(true)} className="grid h-9 w-9 place-items-center rounded-lg text-stone-500 hover:bg-emerald-50 hover:text-emerald-800 lg:hidden" aria-label="Trocar senha" title="Trocar senha"><KeyRound className="h-4 w-4" /></button>
               <button type="button" onClick={logout} className="text-sm font-semibold text-stone-500 hover:text-rose-700 lg:hidden">Sair</button>
               <div className="relative">
                 <button
