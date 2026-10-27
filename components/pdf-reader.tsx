@@ -34,6 +34,7 @@ type Mark = {
   texto: string;
   estilo: "REALCE" | "SUBLINHADO";
   cor: string;
+  opacidade: number;
   posicoes: Position[];
 };
 
@@ -45,11 +46,16 @@ const highlightColors = [
   { name: "Roxo", value: "#DDD6FE" },
 ];
 
-const HIGHLIGHT_OPACITY = 0.32;
+const highlightIntensities = [
+  { name: "Suave", value: 0.16 },
+  { name: "Leve", value: 0.24 },
+  { name: "Médio", value: 0.36 },
+  { name: "Forte", value: 0.52 },
+];
 
-function translucentColor(color: string) {
+function translucentColor(color: string, opacity = 0.24) {
   if (!/^#[\da-f]{6}$/i.test(color)) return color;
-  return `${color}${Math.round(HIGHLIGHT_OPACITY * 255)
+  return `${color}${Math.round(opacity * 255)
     .toString(16)
     .padStart(2, "0")}`;
 }
@@ -109,6 +115,7 @@ function PdfPage({
   draftPositions,
   draftColor,
   draftStyle,
+  draftOpacity,
   brushSize,
   onSelection,
 }: {
@@ -119,6 +126,7 @@ function PdfPage({
   draftPositions: Position[];
   draftColor: string;
   draftStyle: "REALCE" | "SUBLINHADO";
+  draftOpacity: number;
   brushSize: number;
   onSelection: (text: string, positions: Position[]) => void;
 }) {
@@ -292,7 +300,7 @@ function PdfPage({
           height: `${position.height * 100}%`,
           backgroundColor:
             mark.estilo === "REALCE" || position.redondo
-              ? translucentColor(mark.cor)
+              ? translucentColor(mark.cor, mark.opacidade)
               : "transparent",
           borderColor: mark.cor,
         }}
@@ -312,7 +320,7 @@ function PdfPage({
         height: `${position.height * 100}%`,
         backgroundColor:
           draftStyle === "REALCE" || position.redondo
-              ? translucentColor(draftColor)
+              ? translucentColor(draftColor, draftOpacity)
             : "transparent",
         borderColor: draftColor,
       }}
@@ -370,12 +378,14 @@ export function PdfReader({
   const [saving, setSaving] = useState(false);
   const [term, setTerm] = useState("");
   const [color, setColor] = useState(highlightColors[0].value);
+  const [opacity, setOpacity] = useState(0.24);
   const [style, setStyle] = useState<"REALCE" | "SUBLINHADO">("REALCE");
   const [brushSize, setBrushSize] = useState(12);
   const [pendingMark, setPendingMark] = useState<{ text: string; positions: Position[] } | null>(null);
   const [brushEnabled, setBrushEnabled] = useState(false);
   const [marks, setMarks] = useState<Mark[]>([]);
   const [savingMark, setSavingMark] = useState(false);
+  const [updatingMarkId, setUpdatingMarkId] = useState<string | null>(null);
   const [savingKeyword, setSavingKeyword] = useState(false);
   const [error, setError] = useState("");
   const { notify } = useToast();
@@ -439,6 +449,7 @@ export function PdfReader({
           texto: pendingMark.text,
           posicoes: pendingMark.positions,
           cor: color,
+          opacidade: opacity,
           estilo: style,
         }),
       });
@@ -459,6 +470,32 @@ export function PdfReader({
       notify("success", result.message);
     } catch (deleteError) {
       notify("error", deleteError instanceof Error ? deleteError.message : "Não foi possível remover a marcação.");
+    }
+  }
+
+  async function updateMark(
+    mark: Mark,
+    changes: Partial<Pick<Mark, "cor" | "opacidade">>,
+  ) {
+    if (updatingMarkId) return;
+    setUpdatingMarkId(mark.id);
+    try {
+      const result = await sendRequest(`/api/materials/${id}/marks/${mark.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(changes),
+      });
+      setMarks((current) =>
+        current.map((item) => (item.id === mark.id ? (result.data as Mark) : item)),
+      );
+      notify("success", "Marcação atualizada.");
+    } catch (updateError) {
+      notify(
+        "error",
+        updateError instanceof Error ? updateError.message : "Não foi possível atualizar a marcação.",
+      );
+    } finally {
+      setUpdatingMarkId(null);
     }
   }
 
@@ -535,6 +572,7 @@ export function PdfReader({
                     draftPositions={pendingMark?.positions ?? []}
                     draftColor={color}
                     draftStyle={style}
+                    draftOpacity={opacity}
                     brushSize={brushSize}
                     onSelection={(text, positions) => setPendingMark({ text, positions })}
                   />
@@ -583,7 +621,17 @@ export function PdfReader({
                         </div>
                         <div className="mt-3">
                           <ColorPicker color={color} onChange={setColor} label="Cor da marcação" />
-                          <p className="mt-2 text-[11px] leading-4 text-stone-500">Use uma cor sugerida ou toque no último círculo para escolher qualquer cor. O realce usa 32% de opacidade.</p>
+                          <div className="mt-3">
+                            <p className="text-xs font-medium text-stone-700">Intensidade do realce</p>
+                            <div className="mt-2 grid grid-cols-4 gap-1.5">
+                              {highlightIntensities.map((item) => (
+                                <button key={item.name} type="button" onClick={() => setOpacity(item.value)} aria-pressed={opacity === item.value} className={`rounded-lg border px-1 py-1.5 text-[11px] font-semibold ${opacity === item.value ? "border-emerald-700 bg-emerald-50 text-emerald-900" : "border-stone-200 text-stone-600"}`} style={{ background: opacity === item.value ? undefined : translucentColor(color, item.value) }}>
+                                  {item.name}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <p className="mt-2 text-[11px] leading-4 text-stone-500">Use uma cor sugerida ou toque no último círculo para escolher qualquer cor. A intensidade fica salva com a marcação.</p>
                         </div>
                         <button type="button" onClick={() => void saveMark()} disabled={savingMark} className="btn-primary mt-3 w-full text-sm">{savingMark ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}Salvar marcação</button>
                       </div>
@@ -591,10 +639,22 @@ export function PdfReader({
                     <h3 className="mt-5 font-semibold text-stone-900">Marcações desta página</h3>
                     <div className="mt-2 space-y-2">
                       {marks.filter((mark) => mark.pagina === page).map((mark) => (
-                        <div key={mark.id} className="flex items-start gap-2 rounded-xl border border-stone-200 p-2">
-                          <span className="mt-1 h-3 w-3 shrink-0 rounded-sm" style={{ backgroundColor: mark.cor }} />
-                          <p className="min-w-0 flex-1 text-xs leading-5 text-stone-700">{mark.texto}</p>
-                          <button type="button" onClick={() => void deleteMark(mark)} className="text-xs text-rose-700 hover:underline">Excluir</button>
+                        <div key={mark.id} className="rounded-xl border border-stone-200 p-2">
+                          <div className="flex items-start gap-2">
+                            <span className="mt-1 h-3 w-3 shrink-0 rounded-sm" style={{ backgroundColor: mark.cor }} />
+                            <p className="min-w-0 flex-1 text-xs leading-5 text-stone-700">{mark.texto}</p>
+                            <button type="button" onClick={() => void deleteMark(mark)} className="text-xs text-rose-700 hover:underline">Excluir</button>
+                          </div>
+                          <div className="mt-2 flex items-center gap-2 border-t border-stone-100 pt-2">
+                            <ColorPicker color={mark.cor} onChange={(nextColor) => void updateMark(mark, { cor: nextColor })} label={`Cor da marcação ${mark.texto}`} />
+                            <div className="flex min-w-0 flex-1 gap-1" aria-label={`Intensidade da marcação ${mark.texto}`}>
+                              {highlightIntensities.map((item) => (
+                                <button key={item.name} type="button" disabled={updatingMarkId === mark.id} onClick={() => void updateMark(mark, { opacidade: item.value })} aria-pressed={mark.opacidade === item.value} className={`min-w-0 flex-1 rounded-md border px-1 py-1 text-[10px] font-semibold ${mark.opacidade === item.value ? "border-emerald-700 bg-emerald-50 text-emerald-900" : "border-stone-200 text-stone-500"}`}>
+                                  {item.name.slice(0, 1)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
