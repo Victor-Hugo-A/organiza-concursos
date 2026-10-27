@@ -64,11 +64,21 @@ function ColorPicker({
   color,
   onChange,
   label,
+  confirmCustomColor = false,
 }: {
   color: string;
   onChange: (color: string) => void;
   label: string;
+  confirmCustomColor?: boolean;
 }) {
+  const [pendingCustomColor, setPendingCustomColor] = useState(color);
+
+  useEffect(() => {
+    setPendingCustomColor(color);
+  }, [color]);
+
+  const previewColor = confirmCustomColor ? pendingCustomColor : color;
+
   return (
     <div className="flex flex-wrap items-center gap-2" aria-label={label}>
       {highlightColors.map((item) => (
@@ -86,16 +96,25 @@ function ColorPicker({
         className="relative inline-flex h-7 cursor-pointer items-center gap-1 rounded-full border-2 border-stone-900 bg-white px-1.5 text-[10px] font-semibold text-stone-700 shadow"
         title="Escolher cor personalizada"
       >
-        <span className="h-4 w-4 rounded-full border border-stone-300" style={{ backgroundColor: color }} />
+        <span className="h-4 w-4 rounded-full border border-stone-300" style={{ backgroundColor: previewColor }} />
         <span>Paleta</span>
         <input
           type="color"
-          value={color}
-          onChange={(event) => onChange(event.target.value.toUpperCase())}
+          value={previewColor}
+          onChange={(event) => {
+            const nextColor = event.target.value.toUpperCase();
+            if (confirmCustomColor) setPendingCustomColor(nextColor);
+            else onChange(nextColor);
+          }}
           aria-label="Escolher cor personalizada"
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
         />
       </label>
+      {confirmCustomColor && pendingCustomColor !== color && (
+        <button type="button" onClick={() => onChange(pendingCustomColor)} className="rounded-lg border border-emerald-700 px-2 py-1 text-[10px] font-semibold text-emerald-900">
+          Aplicar cor
+        </button>
+      )}
     </div>
   );
 }
@@ -655,7 +674,7 @@ export function PdfReader({
                             <button type="button" onClick={() => void deleteMark(mark)} className="text-xs text-rose-700 hover:underline">Excluir</button>
                           </div>
                           <div className="mt-2 space-y-2 border-t border-stone-100 pt-2">
-                            <ColorPicker color={mark.cor} onChange={(nextColor) => void updateMark(mark, { cor: nextColor })} label={`Cor da marcação ${mark.texto}`} />
+                            <ColorPicker color={mark.cor} onChange={(nextColor) => void updateMark(mark, { cor: nextColor })} label={`Cor da marcação ${mark.texto}`} confirmCustomColor />
                             <div className="flex min-w-0 flex-1 gap-1" aria-label={`Intensidade da marcação ${mark.texto}`}>
                               {highlightIntensities.map((item) => (
                                 <button key={item.name} type="button" disabled={updatingMarkId === mark.id} onClick={() => void updateMark(mark, { opacidade: item.value })} aria-pressed={mark.opacidade === item.value} className={`min-w-0 flex-1 rounded-md border px-1 py-1 text-[10px] font-semibold ${mark.opacidade === item.value ? "border-emerald-700 bg-emerald-50 text-emerald-900" : "border-stone-200 text-stone-500"}`}>
