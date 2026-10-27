@@ -17,7 +17,7 @@ const schema = z.object({
   pagina: z.number().int().min(1).max(10000),
   texto: z.string().trim().min(1).max(3000),
   estilo: z.enum(["REALCE", "SUBLINHADO"]),
-  cor: z.enum(["#FEF08A", "#BBF7D0", "#BFDBFE", "#FBCFE8", "#DDD6FE"]),
+  cor: z.string().regex(/^#[\da-fA-F]{6}$/),
   posicoes: z.array(positionSchema).min(1).max(2000),
 });
 

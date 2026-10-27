@@ -45,6 +45,54 @@ const highlightColors = [
   { name: "Roxo", value: "#DDD6FE" },
 ];
 
+const HIGHLIGHT_OPACITY = 0.32;
+
+function translucentColor(color: string) {
+  if (!/^#[\da-f]{6}$/i.test(color)) return color;
+  return `${color}${Math.round(HIGHLIGHT_OPACITY * 255)
+    .toString(16)
+    .padStart(2, "0")}`;
+}
+
+function ColorPicker({
+  color,
+  onChange,
+  label,
+}: {
+  color: string;
+  onChange: (color: string) => void;
+  label: string;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2" aria-label={label}>
+      {highlightColors.map((item) => (
+        <button
+          key={item.value}
+          type="button"
+          onClick={() => onChange(item.value)}
+          aria-label={item.name}
+          aria-pressed={color === item.value}
+          className={`h-7 w-7 rounded-full border-2 ${color === item.value ? "border-stone-900" : "border-white shadow"}`}
+          style={{ backgroundColor: item.value }}
+        />
+      ))}
+      <label
+        className="relative grid h-7 w-7 cursor-pointer place-items-center rounded-full border-2 border-stone-900 bg-white shadow"
+        title="Escolher cor personalizada"
+      >
+        <span className="h-4 w-4 rounded-full border border-stone-300" style={{ backgroundColor: color }} />
+        <input
+          type="color"
+          value={color}
+          onChange={(event) => onChange(event.target.value.toUpperCase())}
+          aria-label="Escolher cor personalizada"
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        />
+      </label>
+    </div>
+  );
+}
+
 async function sendRequest(url: string, options: RequestInit) {
   const response = await fetch(url, options);
   const result = await response.json().catch(() => null);
@@ -244,7 +292,7 @@ function PdfPage({
           height: `${position.height * 100}%`,
           backgroundColor:
             mark.estilo === "REALCE" || position.redondo
-              ? `${mark.cor}99`
+              ? translucentColor(mark.cor)
               : "transparent",
           borderColor: mark.cor,
         }}
@@ -264,7 +312,7 @@ function PdfPage({
         height: `${position.height * 100}%`,
         backgroundColor:
           draftStyle === "REALCE" || position.redondo
-            ? `${draftColor}99`
+              ? translucentColor(draftColor)
             : "transparent",
         borderColor: draftColor,
       }}
@@ -533,10 +581,9 @@ export function PdfReader({
                           <button type="button" onClick={() => setStyle("REALCE")} aria-pressed={style === "REALCE"} className={`btn-secondary flex-1 text-xs ${style === "REALCE" ? "ring-2 ring-emerald-500" : ""}`}>Realçar</button>
                           <button type="button" onClick={() => setStyle("SUBLINHADO")} aria-pressed={style === "SUBLINHADO"} className={`btn-secondary flex-1 text-xs ${style === "SUBLINHADO" ? "ring-2 ring-emerald-500" : ""}`}><Underline className="h-4 w-4" /> Sublinhado</button>
                         </div>
-                        <div className="mt-3 flex gap-2">
-                          {highlightColors.map((item) => (
-                            <button key={item.value} type="button" onClick={() => setColor(item.value)} aria-label={item.name} aria-pressed={color === item.value} className={`h-7 w-7 rounded-full border-2 ${color === item.value ? "border-stone-900" : "border-white shadow"}`} style={{ backgroundColor: item.value }} />
-                          ))}
+                        <div className="mt-3">
+                          <ColorPicker color={color} onChange={setColor} label="Cor da marcação" />
+                          <p className="mt-2 text-[11px] leading-4 text-stone-500">Use uma cor sugerida ou toque no último círculo para escolher qualquer cor. O realce usa 32% de opacidade.</p>
                         </div>
                         <button type="button" onClick={() => void saveMark()} disabled={savingMark} className="btn-primary mt-3 w-full text-sm">{savingMark ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}Salvar marcação</button>
                       </div>
@@ -556,9 +603,7 @@ export function PdfReader({
                 <h2 className="mt-5 font-semibold text-stone-900">Palavras-chave manuais</h2>
                 <form onSubmit={addKeyword} className="mt-3 space-y-3">
                   <label className="block text-sm font-medium text-stone-700">Adicionar palavra ou expressão<input value={term} onChange={(event) => setTerm(event.target.value)} maxLength={80} required className="mt-1.5" placeholder="Ex.: oração subordinada" /></label>
-                  <div className="flex flex-wrap gap-2" aria-label="Cor da palavra-chave">
-                    {highlightColors.map((item) => <button key={item.value} type="button" onClick={() => setColor(item.value)} aria-label={item.name} aria-pressed={color === item.value} className={`h-7 w-7 rounded-full border-2 ${color === item.value ? "border-stone-900" : "border-white shadow"}`} style={{ backgroundColor: item.value }} />)}
-                  </div>
+                  <ColorPicker color={color} onChange={setColor} label="Cor da palavra-chave" />
                   <button type="submit" disabled={savingKeyword || !term.trim()} className="btn-secondary w-full text-sm">{savingKeyword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}Adicionar palavra-chave</button>
                   {error && <p role="alert" className="text-xs text-rose-700">{error}</p>}
                 </form>
