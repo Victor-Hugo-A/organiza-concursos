@@ -155,6 +155,7 @@ function PdfPage({
   const strokePositions = useRef<Position[]>([]);
   const strokeWords = useRef(new Set<string>());
   const lastStrokePoint = useRef<{ x: number; y: number } | null>(null);
+  const underlineStart = useRef<{ x: number; y: number } | null>(null);
   const activePointer = useRef<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -243,6 +244,27 @@ function PdfPage({
       x: Math.max(0, Math.min(pageBounds.width, event.clientX - pageBounds.left)),
       y: Math.max(0, Math.min(pageBounds.height, event.clientY - pageBounds.top)),
     };
+
+    if (draftStyle === "SUBLINHADO") {
+      const start = underlineStart.current ?? point;
+      underlineStart.current = start;
+      const lineHeight = Math.min(4, pageBounds.height);
+      const lineTop = Math.max(0, Math.min(pageBounds.height - lineHeight, start.y - lineHeight / 2));
+      strokePositions.current = [
+        {
+          x: Math.min(start.x, point.x) / pageBounds.width,
+          y: lineTop / pageBounds.height,
+          width: Math.max(2, Math.abs(point.x - start.x)) / pageBounds.width,
+          height: lineHeight / pageBounds.height,
+        },
+      ];
+      onSelection(
+        [...strokeWords.current].join(" ").slice(0, 3000) || "Marcação livre",
+        [...strokePositions.current],
+      );
+      return;
+    }
+
     const radius = brushSize / 2;
     const addDab = (x: number, y: number) => {
       if (strokePositions.current.length >= 2000) return;
@@ -284,6 +306,7 @@ function PdfPage({
     strokePositions.current = [];
     strokeWords.current.clear();
     lastStrokePoint.current = null;
+    underlineStart.current = null;
   }
 
   function startBrush(event: PointerEvent<HTMLDivElement>) {
@@ -304,6 +327,7 @@ function PdfPage({
     if (activePointer.current !== event.pointerId) return;
     activePointer.current = null;
     lastStrokePoint.current = null;
+    underlineStart.current = null;
     if (!strokePositions.current.length) clearStroke();
   }
 
