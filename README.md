@@ -1,112 +1,96 @@
-# Organiza
+# Organiza ✦
 
-Uma plataforma pessoal para **organizar, estudar, praticar, revisar e acompanhar a evolução**. O foco é transformar materiais dispersos em uma rotina clara de estudo, para ENEM, vestibulares, concursos ou qualquer objetivo individual.
+> **Seu espaço para estudar com clareza, do primeiro PDF até a revisão.**
 
-```text
-Objetivo → Disciplina → Tópico → Material → Estudo → Prática → Revisão
-```
+O **Organiza** reúne o que normalmente fica espalhado entre apostilas, links, anotações e listas de exercícios. Ele foi pensado para quem se prepara para ENEM, vestibulares, PAS, concursos ou qualquer meta que peça constância.
 
-## O que está implementado
+<p align="center">
+  <strong>🗂️ Planeje</strong> &nbsp;·&nbsp;
+  <strong>📖 Estude</strong> &nbsp;·&nbsp;
+  <strong>✍️ Pratique</strong> &nbsp;·&nbsp;
+  <strong>🗓️ Revise</strong>
+</p>
 
-| Área | Recursos |
-| --- | --- |
-| Conta | Cadastro, verificação de e-mail, login, logout e recuperação de senha. |
-| Planos | Objetivos de estudo, disciplinas, tópicos e subtópicos. |
-| Biblioteca | PDFs, slides, documentos, textos, anotações e links vinculados ao conteúdo certo. |
-| PDF | Upload, leitura, posição da página, conclusão, resumo local, palavras-chave e pontos de estudo. |
-| Sessões | Timer, pausa, finalização, dificuldade e histórico de tempo estudado. |
-| Prática | Cadastro de questões, tentativas, acertos, erros e explicação da resposta. |
-| Revisões | Agenda automática e manual, pendências, atrasos e histórico de conclusão. |
-| Dashboard | Dados reais da semana, continuar estudando, progresso por disciplina e sessões recentes. |
+---
 
-## Como os dados aparecem
-
-- **Tempo estudado** vem apenas de sessões finalizadas.
-- **Tópicos estudados** consideram tópicos de materiais usados em sessões na semana atual.
-- **Aproveitamento** considera tentativas de questões registradas na semana atual.
-- **Progresso por disciplina** é calculado pelos materiais concluídos sobre os materiais vinculados à disciplina.
-- A plataforma mostra estados vazios quando ainda não há dados, sem usar números de demonstração.
-
-## Arquitetura
+## ✦ Um caminho simples para estudar
 
 ```mermaid
 flowchart LR
-  U[Usuário] --> P[Planos]
-  P --> D[Disciplinas]
-  D --> T[Tópicos]
-  T --> M[Materiais]
-  M --> S[Sessões de estudo]
-  D --> Q[Questões]
-  M --> R[Revisões]
-  S --> DASH[Dashboard]
-  Q --> DASH
-  R --> DASH
+    A[🗂️ Plano] --> B[📚 Matéria]
+    B --> C[🏷️ Tópico]
+    C --> D[📄 Material]
+    D --> E[📖 Estudo]
+    E --> F[✍️ Prática]
+    F --> G[🗓️ Revisão]
 ```
 
-## Tecnologias
+Você começa criando um plano, como “ENEM 2027” ou “Concurso da minha área”. Dentro dele, organiza as matérias e seus tópicos. Depois, adiciona os materiais que vai usar e o Organiza ajuda a transformar cada sessão de estudo em um histórico que faz sentido.
 
-- Next.js 15 e React 19
-- TypeScript
-- Prisma ORM e PostgreSQL/Neon
-- Tailwind CSS
-- Zod para validação
-- PDF.js e Tesseract.js para processamento local de PDFs
-- Resend para e-mails transacionais
-- Vercel Blob para armazenamento de arquivos em produção
+### 01 · 🗂️ Organize seu objetivo
 
-## Configuração local
+Crie planos de estudo e dê uma identidade a cada um deles. Em seguida, distribua as matérias, tópicos e subtópicos do jeito que combina com a sua preparação.
 
-O projeto requer Node.js 22.13 ou superior, um banco PostgreSQL e um arquivo `.env` local. Nunca publique valores reais de ambiente.
+### 02 · 📚 Monte sua biblioteca
 
-| Variável | Uso |
+Guarde PDFs, imagens, slides, textos, links e anotações junto da matéria certa. Assim, quando for estudar um tema, o conteúdo necessário já estará no mesmo lugar.
+
+### 03 · 🖍️ Estude sem perder o ponto
+
+O leitor de PDF lembra a última página visitada, permite marcar o material como concluído e registra suas sessões de estudo. Você pode destacar partes importantes com a cor e a intensidade que preferir, sublinhar com linhas retas e salvar as marcações para consultar depois.
+
+### 04 · 🗓️ Volte ao que importa
+
+As revisões mantêm os materiais em circulação. A agenda mostra o que está pendente, o que venceu e o próximo conteúdo para retomar, sem transformar o dia em uma lista impossível.
+
+---
+
+## ✦ O que você encontra no Organiza
+
+| Espaço | Para que serve |
 | --- | --- |
-| `DATABASE_URL` | Conexão PostgreSQL/Neon. |
-| `AUTH_SECRET` | Assinatura de sessão. |
-| `APP_URL` | URL pública da aplicação, como `http://localhost:3000`. |
-| `RESEND_API_KEY` | Envio de confirmação e recuperação de senha. |
-| `EMAIL_FROM` | Remetente verificado no Resend. |
-| `BLOB_READ_WRITE_TOKEN` | Upload de arquivos na Vercel, quando aplicável. |
+| **🏠 Visão geral** | Mostra o que continuar estudando, as prioridades do dia, o progresso por matéria e a atividade recente. |
+| **🗂️ Meus planos** | Reúne seus objetivos de estudo, matérias e tópicos em uma estrutura fácil de acompanhar. |
+| **📚 Minha Biblioteca** | Mantém materiais, links, textos e anotações organizados por assunto. |
+| **🖍️ Leitor de PDF** | Abre o material no próprio app, guarda o ponto de leitura e permite realçar, sublinhar e salvar marcações. |
+| **📝 Anotações** | Guarda resumos, dúvidas e observações vinculados às disciplinas. |
+| **✍️ Prática** | Permite cadastrar e responder questões, rever tentativas e acompanhar acertos e erros. |
+| **🗓️ Revisões** | Organiza retornos automáticos e manuais para que nenhum conteúdo fique esquecido. |
+| **🎯 Metas semanais** | Ajuda a definir e acompanhar uma meta de tempo de estudo e de questões. |
+| **📈 Relatórios** | Exibe seu ritmo semanal, tempo dedicado, prática, aproveitamento e revisões concluídas. |
+| **🔎 Pesquisar** | Localiza matérias, tópicos, materiais e questões sem precisar navegar por toda a estrutura. |
+| **⬇️ Meus dados** | Permite baixar seus registros em planilhas para manter uma cópia organizada. |
 
-Com as variáveis configuradas, os comandos principais são:
+---
 
-```bash
-npm install
-npm run prisma:generate
-npm run prisma:migrate
-npm run dev
-```
+## ✦ Um exemplo de rotina
 
-### Arquivos na produção
+1. Crie o plano **“ENEM 2027”**.
+2. Adicione a matéria **História** e o tópico **Era Vargas**.
+3. Envie uma apostila ou slide para a biblioteca.
+4. Leia no próprio Organiza, faça realces e registre os pontos importantes.
+5. Resolva as questões do tema quando estiver pronto.
+6. Volte à agenda para revisar o conteúdo no momento indicado.
 
-Configure `BLOB_READ_WRITE_TOKEN` no ambiente de produção antes de publicar. Novos PDFs são privados e são entregues apenas pela rota autenticada da aplicação. Após a publicação desta versão, execute uma vez `npm run migrate:private-files` para converter PDFs públicos já existentes. Agende `npm run cleanup:files` para processar exclusões que não tiverem sido concluídas na primeira tentativa.
+O painel acompanha esse percurso com dados da sua própria atividade: sessões concluídas, materiais finalizados, questões respondidas e revisões feitas.
 
-## Qualidade e validação
+---
 
-```bash
-npm run lint
-npm run typecheck
-npm run test:pdf
-npm run build
-```
+## 🔒 Feito para o seu acervo
 
-## Limites atuais
+- Cada conta vê somente seus próprios planos, materiais e registros.
+- Seus PDFs enviados ficam protegidos e são acessados apenas dentro da sua área de estudos.
+- As marcações do leitor são salvas para que você retome a leitura como deixou.
+- O progresso mostrado no painel vem de ações reais realizadas na plataforma.
+- A conta inclui confirmação de e-mail e recuperação de senha.
 
-- O processamento de PDF é local e não usa IA paga.
-- PDFs digitalizados e slides podem usar OCR local.
-- As questões são cadastradas manualmente pelo próprio usuário.
-- A pesquisa global e um editor rico de anotações ainda não foram implementados.
+---
 
-## Roadmap
+## ✦ Comece por aqui
 
-- Pesquisa global em planos, tópicos, materiais, anotações e questões.
-- Editor de anotações mais completo.
-- Leitor de PDF integrado com anotações por página.
-- Repetição espaçada avançada como etapa futura.
+Crie sua conta, abra **Meus planos** e monte o primeiro objetivo. Com uma matéria e um material, a sua rotina já pode começar a ganhar forma.
 
-## Segurança
-
-- Segredos são lidos somente por variáveis de ambiente.
-- Cada consulta de dados é associada ao usuário autenticado.
-- Senhas são armazenadas como hash.
-- Tokens de confirmação e redefinição têm uso controlado e expiração.
-- Arquivos de ambiente e uploads locais estão ignorados pelo Git.
+<p align="center">
+  <strong>Organiza</strong><br />
+  <sub>Um lugar mais calmo para cuidar dos seus estudos.</sub>
+</p>
