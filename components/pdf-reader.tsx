@@ -654,7 +654,7 @@ export function PdfReader({
                             <p className="min-w-0 flex-1 text-xs leading-5 text-stone-700">{mark.texto}</p>
                             <button type="button" onClick={() => void deleteMark(mark)} className="text-xs text-rose-700 hover:underline">Excluir</button>
                           </div>
-                          <div className="mt-2 flex items-center gap-2 border-t border-stone-100 pt-2">
+                          <div className="mt-2 space-y-2 border-t border-stone-100 pt-2">
                             <ColorPicker color={mark.cor} onChange={(nextColor) => void updateMark(mark, { cor: nextColor })} label={`Cor da marcação ${mark.texto}`} />
                             <div className="flex min-w-0 flex-1 gap-1" aria-label={`Intensidade da marcação ${mark.texto}`}>
                               {highlightIntensities.map((item) => (
